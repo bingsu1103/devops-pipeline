@@ -6,13 +6,15 @@
 
 - name: Pull latest image from DockerHub
   docker_image:
-    name: "bingsu1103/{{ image_name }}:{{ image_tag | default('latest') }}"
+    name: "{{ docker_user }}/{{ image_name }}:{{ image_tag | default('latest') }}"
+
     source: pull
 
 - name: Run Docker container
   docker_container:
     name: "{{ container_name }}"
-    image: "bingsu1103/{{ image_name }}:{{ image_tag | default('latest') }}"
+    image: "{{ docker_user }}/{{ image_name }}:{{ image_tag | default('latest') }}"
+
     state: started
     restart_policy: always
     ports:

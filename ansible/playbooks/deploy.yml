@@ -7,7 +7,7 @@
       vars:
         image_name: "devops-backend"
         container_name: "backend"
-        app_port: 7070
+        app_port: "{{ backend_port }}"
         app_env:
           SPRING_DATASOURCE_URL: "jdbc:postgresql://{{ db_host }}:{{ db_port | default(5432) }}/{{ db_name }}"
           SPRING_DATASOURCE_USERNAME: "{{ db_username }}"
@@ -15,6 +15,7 @@
           SPRING_DATASOURCE_DRIVER: "org.postgresql.Driver"
           SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
           SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+          SERVER_PORT: "{{ backend_port }}"
 
 - name: Deploy Frontend Service
   hosts: frontend
@@ -24,6 +25,7 @@
       vars:
         image_name: "devops-frontend"
         container_name: "frontend"
-        app_port: 3000
+        app_port: "{{ frontend_port }}"
         app_env:
-          NEXT_PUBLIC_API_URL: "http://{{ hostvars['backend_server']['ansible_host'] }}:7070"
+          PORT: "{{ frontend_port }}"
+          NEXT_PUBLIC_API_URL: "http://{{ hostvars['backend_server']['ansible_host'] }}:{{ backend_port }}"
