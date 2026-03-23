@@ -5,6 +5,7 @@ pipeline {
         choice(name: 'ENVIRONMENT', choices: ['dev', 'prod'], description: 'Select the environment to deploy')
         string(name: 'BACKEND_PORT', defaultValue: '7070', description: 'Port for the Backend service')
         string(name: 'FRONTEND_PORT', defaultValue: '3000', description: 'Port for the Frontend service')
+        string(name: 'AWS_SSH_KEY_NAME', defaultValue: 'AWS_key_pair', description: 'The Name of the Key Pair on AWS Console')
 
         string(name: 'DOCKERHUB_USER_PARAM', defaultValue: '', description: 'Docker Hub Username (Optional - falls back to global DOCKERHUB_USER)')
     }
@@ -18,6 +19,7 @@ pipeline {
         ENV_TARGET = (params.ENVIRONMENT ?: 'dev')
         B_PORT = (params.BACKEND_PORT ?: '7070')
         F_PORT = (params.FRONTEND_PORT ?: '3000')
+        AWS_SSH_KEY = (params.AWS_SSH_KEY_NAME ?: 'AWS_key_pair')
         
         // Use Global Variable DOCKERHUB_USER if parameter is empty
         DOCKER_USER = (params.DOCKERHUB_USER_PARAM && params.DOCKERHUB_USER_PARAM != "") ? params.DOCKERHUB_USER_PARAM : (env.DOCKERHUB_USER ?: 'bingsu1103')
@@ -59,7 +61,7 @@ pipeline {
                 ]) {
                     dir("infrastructure/envs/${ENV_TARGET}") {
                         sh 'terraform init'
-                        sh "terraform apply -var='db_password=${env.DB_PASS}' -var='backend_port=${B_PORT}' -var='frontend_port=${F_PORT}' -auto-approve"
+                        sh "terraform apply -var='db_password=${env.DB_PASS}' -var='backend_port=${B_PORT}' -var='frontend_port=${F_PORT}' -var='ssh_key=${AWS_SSH_KEY}' -auto-approve"
                         
                         script {
                             // Extract IP from Terraform Output

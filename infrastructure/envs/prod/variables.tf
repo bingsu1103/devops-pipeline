@@ -11,4 +11,4 @@ variable "db_user" { default = "prodadmin" }
 variable "db_password" { default = "prod-db-pass" }
 variable "backend_port" { default = 7070 }
 variable "frontend_port" { default = 3000 }
-variable "ssh_key" { default = "ec2-ssh-key" }
+variable "ssh_key" { default = "AWS_key_pair" }

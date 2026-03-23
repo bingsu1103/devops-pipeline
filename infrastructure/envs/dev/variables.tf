@@ -1,5 +1,5 @@
 variable "region" { default = "ap-southeast-1" }
-variable "ssh_key" { default = "ec2-ssh-key" } # Tên Key của bạn (Phân biệt HOA thường)
+variable "ssh_key" { default = "AWS_key_pair" } # Tên Key của bạn (Phân biệt HOA thường)
 variable "env" { default = "dev" }
 variable "vpc_cidr" { default = "10.0.0.0/16" }
 variable "instance_type" { default = "t4g.micro" }
