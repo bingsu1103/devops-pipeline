@@ -10,7 +10,8 @@ interface Product {
   quantity: number;
 }
 
-const API_URL = "http://localhost:7070/api/products";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:7070/api/products";
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
