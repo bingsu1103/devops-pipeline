@@ -71,11 +71,21 @@ When running the pipeline, provide these parameters:
 
 ### 3. Global Environment Variables
 
-In Jenkins (`Manage Jenkins` -> `Configure System` -> `Global properties`), define:
+Define these in Jenkins (**Manage Jenkins** -> **System** -> **Global properties** -> **Environment variables**):
 
-- `DOCKERHUB_USER`: `bingsu1103` (or your Docker Hub username).
+- **`DOCKERHUB_USER`**: Your Docker Hub username (e.g., `bingsu1103`). Setting this allows the pipeline to run automatically on every push without manually entering parameters.
 
-### 3. Pipeline Requirements
+### 4. Pipeline Automation (CI/CD)
+
+The pipeline is now fully automated. It will use the following default values if triggered by a code push:
+
+- **Backend Port**: `7070`
+- **Frontend Port**: `3000`
+- **Environment**: `dev`
+
+If you need to change these values for a specific deployment, use the **"Build with Parameters"** option.
+
+### 5. Pipeline Requirements
 
 - **NodeJS**: Standard installation on the agent.
 - **Maven**: Ensure `mvnw` in the backend is executable (`chmod +x backend/mvnw`).
