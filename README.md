@@ -170,4 +170,4 @@ In the `Jenkinsfile`, notice the **Infrastructure Provisioning** stage:
 
 ---
 
-_Created with ❤️ by the DevOps Team._
+_Created with ❤️ by the Bingsu(Gia An)._

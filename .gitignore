@@ -31,3 +31,14 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Ansible & Inventory
+ansible/inventory/*.ini
+!ansible/inventory/*.example
+
+# Security & SSH
+infrastructure/keys/*
+!infrastructure/keys/*.pub
+*.pem
+*.key
+*.pub
