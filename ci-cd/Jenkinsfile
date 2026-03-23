@@ -53,10 +53,32 @@ pipeline {
             }
         }
 
-        stage('Deploy (Ansible/K8s)') {
+        stage('Infrastructure Provisioning') {
             steps {
-                echo "🚀 Deploying to environment using Ansible/Kubernetes..."
-                // Bước này sẽ được hoàn thiện ở các giai đoạn sau của lộ trình
+                dir('infrastructure/envs/dev') {
+                    sh 'terraform init'
+                    sh 'terraform apply -auto-approve'
+                }
+            }
+        }
+
+        stage('Configuration & Deploy') {
+            steps {
+                script {
+                    // 1. Chạy Ansible để cấu hình server Docker
+                    dir('ansible') {
+                        sh "ansible-playbook -i inventory/dev.ini playbooks/setup.yml"
+                        sh "ansible-playbook -i inventory/dev.ini playbooks/deploy.yml --extra-vars 'image_tag=${TAG}'"
+                    }
+                    
+                    // 2. Chạy Kubernetes để điều phối Cluster
+                    dir('k8s') {
+                        sh "kubectl apply -f namespace.yaml"
+                        sh "kubectl apply -f backend/"
+                        sh "kubectl apply -f frontend/"
+                        sh "kubectl apply -f ingress.yaml"
+                    }
+                }
             }
         }
     }
