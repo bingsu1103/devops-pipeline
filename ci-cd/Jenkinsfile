@@ -28,12 +28,12 @@ pipeline {
         stage('Infrastructure Provisioning') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS'),
-                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET')
+                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
                 ]) {
                     dir('infrastructure/envs/dev') {
                         sh 'terraform init'
-                        sh "export TF_VAR_access_key=${AWS_ACCESS} && export TF_VAR_secret_key=${AWS_SECRET} && terraform apply -auto-approve"
+                        sh "terraform apply -auto-approve"
                         
                         script {
                             // Lay IP tu Terraform Output

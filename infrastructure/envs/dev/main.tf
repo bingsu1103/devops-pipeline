@@ -1,8 +1,5 @@
-# Provider configuration (Tránh hard-code vùng US-East-1)
 provider "aws" {
-  region     = var.region
-  access_key = var.access_key
-  secret_key = var.secret_key
+  region = var.region
 }
 
 # 1. Gọi Module VPC

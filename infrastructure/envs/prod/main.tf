@@ -1,8 +1,5 @@
-# Provider config cho Production (có thể khác vùng US-East)
 provider "aws" {
-  region     = var.region
-  access_key = var.access_key
-  secret_key = var.secret_key
+  region = var.region
 }
 
 # 1. VPC Production (CIDR khác để tránh chồng lấn nếu cần peering)
