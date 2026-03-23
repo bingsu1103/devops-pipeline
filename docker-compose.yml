@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: ./backend
+    container_name: devops-backend
+    ports:
+      - "7070:7070"
+    networks:
+      - devops-net
+
+  frontend:
+    build: ./frontend
+    container_name: devops-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - devops-net
+
+networks:
+  devops-net:
+    driver: bridge
