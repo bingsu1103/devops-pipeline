@@ -29,7 +29,8 @@ module "backend" {
   source           = "../../modules/ec2"
   env              = var.env
   instance_name    = "backend-prod"
-  app_port         = 7070
+  app_port         = var.backend_port
+  ssh_key          = var.ssh_key
   vpc_id           = module.vpc.vpc_id
   public_subnet_id = module.vpc.public_subnet_id
   instance_type    = var.instance_type
@@ -39,7 +40,8 @@ module "frontend" {
   source           = "../../modules/ec2"
   env              = var.env
   instance_name    = "frontend-prod"
-  app_port         = 3000
+  app_port         = var.frontend_port
+  ssh_key          = var.ssh_key
   vpc_id           = module.vpc.vpc_id
   public_subnet_id = module.vpc.public_subnet_id
   instance_type    = var.instance_type

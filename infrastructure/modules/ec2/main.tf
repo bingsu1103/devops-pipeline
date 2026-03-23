@@ -4,7 +4,7 @@ variable "public_subnet_id" { type = string }
 variable "vpc_id" { type = string }
 variable "instance_name" { type = string }
 variable "app_port" { type = number }
-variable "key_name" { type = string } # Biến mới để nhận tên Key Pair từ AWS
+variable "ssh_key" { type = string } # Biến mới để nhận tên Key Pair từ AWS
 
 # Tự động tìm Amazon Linux 2023 ARM64 mới nhất
 data "aws_ami" "amazon_linux" {
@@ -65,7 +65,7 @@ resource "aws_instance" "web" {
   ami           = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
   subnet_id     = var.public_subnet_id
-  key_name      = var.key_name # Gắn khóa để có thể SSH vào
+  key_name      = var.ssh_key # Gắn khóa để có thể SSH vào
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
   tags = { Name = "${var.instance_name}-${var.env}" }

@@ -1,11 +1,12 @@
-output "prod_backend_ip" {
+output "backend_public_ip" {
   value = module.backend.instance_public_ip
 }
 
-output "prod_frontend_ip" {
+output "frontend_public_ip" {
   value = module.frontend.instance_public_ip
 }
 
-output "prod_rds_endpoint" {
+output "rds_endpoint" {
   value = module.rds.db_endpoint
 }
+

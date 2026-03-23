@@ -1,5 +1,5 @@
 variable "region" { default = "ap-southeast-1" }
-variable "key_name" { default = "AWS_key_pair" } # Tên Key của bạn (Phân biệt HOA thường)
+variable "ssh_key" { default = "ec2-ssh-key" } # Tên Key của bạn (Phân biệt HOA thường)
 variable "env" { default = "dev" }
 variable "vpc_cidr" { default = "10.0.0.0/16" }
 variable "instance_type" { default = "t4g.micro" }
@@ -10,3 +10,5 @@ variable "db_instance_class" { default = "db.t3.micro" }
 variable "db_name" { default = "devops_db" }
 variable "db_user" { default = "dbadmin" }
 variable "db_password" { default = "dev-db-pass" }
+variable "backend_port" { default = 7070 }
+variable "frontend_port" { default = 3000 }
