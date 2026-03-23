@@ -25,26 +25,6 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
-            steps {
-                script {
-                    sh "chmod +x ci-cd/scripts/*.sh"
-                    sh "./ci-cd/scripts/build.sh ${TAG}"
-                }
-            }
-        }
-
-        stage('Push DockerHub') {
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                        sh "docker login -u ${USER} -p ${PASS}"
-                        sh "./ci-cd/scripts/push.sh ${TAG}"
-                    }
-                }
-            }
-        }
-
         stage('Infrastructure Provisioning') {
             steps {
                 withCredentials([
@@ -62,22 +42,44 @@ pipeline {
                             def rds_endpoint_full = sh(script: "terraform output -raw rds_endpoint", returnStdout: true).trim()
                             def rds_host = rds_endpoint_full.split(":")[0]
 
-                            echo "Backend IP: ${backend_ip}"
-                            echo "Frontend IP: ${frontend_ip}"
-                            echo "RDS Host: ${rds_host}"
+                            env.BACKEND_IP = backend_ip
+                            env.FRONTEND_IP = frontend_ip
+                            env.RDS_HOST = rds_host
+
+                            echo "Backend IP: ${env.BACKEND_IP}"
 
                             // Cap nhat file inventory cua Ansible
                             dir('../../../ansible') {
-                                sh "sed -i '' 's/backend_server ansible_host=[^ ]*/backend_server ansible_host=${backend_ip}/g' inventory/dev.ini"
-                                sh "sed -i '' 's/frontend_server ansible_host=[^ ]*/frontend_server ansible_host=${frontend_ip}/g' inventory/dev.ini"
-                                sh "sed -i '' 's/db_host=.*/db_host=${rds_host}/g' inventory/dev.ini"
+                                sh "sed -i '' 's/backend_server ansible_host=[^ ]*/backend_server ansible_host=${env.BACKEND_IP}/g' inventory/dev.ini"
+                                sh "sed -i '' 's/frontend_server ansible_host=[^ ]*/frontend_server ansible_host=${env.FRONTEND_IP}/g' inventory/dev.ini"
+                                sh "sed -i '' 's/db_host=.*/db_host=${env.RDS_HOST}/g' inventory/dev.ini"
                                 sh "sed -i '' 's/db_name=.*/db_name=devops_db/g' inventory/dev.ini"
                                 sh "sed -i '' 's/db_password=.*/db_password=dev-db-pass/g' inventory/dev.ini"
-                                
-                                echo "--- Updated Ansible Inventory ---"
-                                sh "cat inventory/dev.ini"
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                script {
+                    sh "chmod +x ci-cd/scripts/*.sh"
+                    // Truyen link API vao de build frontend
+                    withEnv(["NEXT_PUBLIC_API_URL=http://${env.BACKEND_IP}:7070"]) {
+                        sh "./ci-cd/scripts/build.sh ${TAG}"
+                    }
+                }
+            }
+        }
+
+        stage('Push DockerHub') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                        sh "docker login -u ${USER} -p ${PASS}"
+                        sh "./ci-cd/scripts/push.sh ${TAG}"
                     }
                 }
             }
@@ -86,21 +88,10 @@ pipeline {
         stage('Configuration & Deploy') {
             steps {
                 script {
-                    // Update Tag cho Ansible
                     dir('ansible') {
                         sh "ansible-playbook -i inventory/dev.ini playbooks/setup.yml"
                         sh "ansible-playbook -i inventory/dev.ini playbooks/deploy.yml --extra-vars 'image_tag=${TAG}'"
                     }
-                    
-                    // Chạy Kubernetes nếu cần
-                    /* 
-                    dir('k8s') {
-                        sh "kubectl apply -f namespace.yaml"
-                        sh "kubectl apply -f backend/"
-                        sh "kubectl apply -f frontend/"
-                        sh "kubectl apply -f ingress.yaml"
-                    }
-                    */
                 }
             }
         }

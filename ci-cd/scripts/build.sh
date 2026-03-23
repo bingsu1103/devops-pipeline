@@ -7,6 +7,8 @@ echo "--- Building Backend Image ---"
 docker build -t $DOCKERHUB_USER/devops-backend:$TAG ./backend
 
 echo "--- Building Frontend Image ---"
-docker build -t $DOCKERHUB_USER/devops-frontend:$TAG ./frontend
+docker build \
+  --build-arg NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-"http://localhost:7070"} \
+  -t $DOCKERHUB_USER/devops-frontend:$TAG ./frontend
 
 echo "--- Build Complete ---"
