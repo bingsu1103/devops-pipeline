@@ -47,9 +47,14 @@ pipeline {
 
         stage('Infrastructure Provisioning') {
             steps {
-                dir('infrastructure/envs/dev') {
-                    sh 'terraform init'
-                    sh 'terraform apply -auto-approve'
+                withCredentials([
+                    string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS'),
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET')
+                ]) {
+                    dir('infrastructure/envs/dev') {
+                        sh 'terraform init'
+                        sh "export TF_VAR_access_key=${AWS_ACCESS} && export TF_VAR_secret_key=${AWS_SECRET} && terraform apply -auto-approve"
+                    }
                 }
             }
         }
