@@ -1,0 +1,20 @@
+---
+- name: Ensure existing container is stopped and removed
+  docker_container:
+    name: "{{ container_name }}"
+    state: absent
+
+- name: Pull latest image from DockerHub
+  docker_image:
+    name: "bingsu1103/{{ image_name }}:{{ image_tag | default('latest') }}"
+    source: pull
+
+- name: Run Docker container
+  docker_container:
+    name: "{{ container_name }}"
+    image: "bingsu1103/{{ image_name }}:{{ image_tag | default('latest') }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "{{ app_port }}:{{ app_port }}"
+    env: "{{ app_env | default({}) }}"

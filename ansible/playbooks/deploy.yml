@@ -1,0 +1,25 @@
+---
+- name: Deploy Backend Service
+  hosts: backend
+  roles:
+    - role: app
+      vars:
+        image_name: "devops-backend"
+        container_name: "backend"
+        app_port: 7070
+        app_env:
+          SPRING_DATASOURCE_URL: "jdbc:postgresql://{{ db_host }}:{{ db_port | default(5432) }}/{{ db_name }}"
+          SPRING_DATASOURCE_USERNAME: "{{ db_username }}"
+          SPRING_DATASOURCE_PASSWORD: "{{ db_password }}"
+          SPRING_DATASOURCE_DRIVER: "org.postgresql.Driver"
+          SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
+          SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+
+- name: Deploy Frontend Service
+  hosts: frontend
+  roles:
+    - role: app
+      vars:
+        image_name: "devops-frontend"
+        container_name: "frontend"
+        app_port: 3000
