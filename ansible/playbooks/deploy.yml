@@ -1,6 +1,7 @@
 ---
 - name: Deploy Backend Service
   hosts: backend
+  become: yes
   roles:
     - role: app
       vars:
@@ -17,6 +18,7 @@
 
 - name: Deploy Frontend Service
   hosts: frontend
+  become: yes
   roles:
     - role: app
       vars:
