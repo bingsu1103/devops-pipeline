@@ -17,6 +17,7 @@ module "rds" {
   source            = "../../modules/rds"
   env               = var.env
   vpc_id            = module.vpc.vpc_id
+  subnet_ids        = module.vpc.subnet_ids
   db_engine         = var.db_engine
   db_port           = var.db_port
   allocated_storage = var.allocated_storage

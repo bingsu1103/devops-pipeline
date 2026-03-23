@@ -10,6 +10,7 @@ variable "db_password" {
 }
 variable "db_port" { type = number }
 variable "allocated_storage" { type = number }
+variable "subnet_ids" { type = list(string) }
 
 resource "aws_security_group" "db_sg" {
   name   = "db-sg-${var.env}"
@@ -22,7 +23,11 @@ resource "aws_security_group" "db_sg" {
     cidr_blocks = ["10.0.0.0/8"]
   }
 }
-
+resource "aws_db_subnet_group" "rds_subnet_group" {
+  name       = "db-subnet-group-${var.env}"
+  subnet_ids = var.subnet_ids
+  tags = { Name = "db-subnet-group-${var.env}" }
+}
 resource "aws_db_instance" "rds" {
   identifier           = "db-${var.env}"
   allocated_storage    = var.allocated_storage
@@ -33,6 +38,7 @@ resource "aws_db_instance" "rds" {
   password             = var.db_password
   port                 = var.db_port
   skip_final_snapshot  = true
+  db_subnet_group_name = aws_db_subnet_group.rds_subnet_group.name
   vpc_security_group_ids = [aws_security_group.db_sg.id]
 
   tags = { Name = "devops-rds-${var.env}" }
