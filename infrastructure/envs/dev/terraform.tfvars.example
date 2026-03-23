@@ -1,0 +1,24 @@
+# AWS Configuration
+region     = "ap-southeast-1"
+access_key = "YOUR_AWS_ACCESS_KEY"
+secret_key = "YOUR_AWS_SECRET_KEY"
+
+# Environment
+env = "dev"
+
+# Networking
+vpc_cidr = "10.0.0.0/16"
+
+# Compute (t4g.micro for Dev)
+instance_type = "t4g.micro"
+
+# Database (PostgreSQL for Dev)
+db_engine         = "postgres"
+db_port           = 5432
+allocated_storage = 20
+db_instance_class = "db.t3.micro"
+db_name           = "dev_inventory_db"
+db_user           = "dev_db_admin"
+
+# SENSITIVE: Luôn dùng biến môi trường hoặc nhập tay, KHÔNG ghi mật khẩu thật vào đây
+db_password       = "REPLACE_WITH_SECURE_PASSWORD"

@@ -1,0 +1,33 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
+.terraform.lock.hcl
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Backend
+**/target/
+**/build/
+**/bin/
+!**/src/main/resources/
+!**/src/test/resources/
+
+# Frontend
+**/node_modules/
+**/.next/
+**/out/
+**/dist/
+.env*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+Thumbs.db
