@@ -1,6 +1,7 @@
 variable "region" { default = "ap-southeast-1" }
 variable "access_key" { type = string; sensitive = true }
 variable "secret_key" { type = string; sensitive = true }
+variable "key_name" { default = "aws_key_pair" } # Tên Key của bạn trên AWS
 variable "env" { default = "dev" }
 variable "vpc_cidr" { default = "10.0.0.0/16" }
 variable "instance_type" { default = "t4g.micro" }
