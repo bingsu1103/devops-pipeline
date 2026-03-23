@@ -12,7 +12,6 @@ import {
   Edit3,
   Check,
   Code,
-  ArrowRight,
   X,
 } from "lucide-react";
 import apiExample, { type Example } from "@/service/api-example";
