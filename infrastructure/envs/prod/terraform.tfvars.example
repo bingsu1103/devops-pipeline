@@ -1,7 +1,6 @@
 # AWS Configuration
 region     = "ap-southeast-1"
-access_key = "YOUR_AWS_PROD_ACCESS_KEY"
-secret_key = "YOUR_AWS_PROD_SECRET_KEY"
+
 
 # Environment
 env = "prod"
@@ -20,5 +19,4 @@ db_instance_class = "db.t3.medium"
 db_name           = "production_inventory_db"
 db_user           = "prod_db_admin"
 
-# SENSITIVE
-db_password       = "REPLACE_WITH_ACTUAL_SECURE_PASSWORD"
+
