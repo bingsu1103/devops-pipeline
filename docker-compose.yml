@@ -15,7 +15,7 @@ services:
     depends_on:
       - backend
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:7070/api/products
+      - NEXT_PUBLIC_API_URL=http://localhost:7070
     networks:
       - devops-net
 
