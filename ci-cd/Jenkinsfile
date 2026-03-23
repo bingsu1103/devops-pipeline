@@ -13,8 +13,15 @@ pipeline {
     environment {
         PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
+        
+        // --- AUTO DEFAULTS: Priority (Parameter > Global Env > Default) ---
+        ENV_TARGET = (params.ENVIRONMENT ?: 'dev')
+        B_PORT = (params.BACKEND_PORT ?: '7070')
+        F_PORT = (params.FRONTEND_PORT ?: '3000')
+        
         // Use Global Variable DOCKERHUB_USER if parameter is empty
-        DOCKER_USER = (params.DOCKERHUB_USER_PARAM != "") ? params.DOCKERHUB_USER_PARAM : env.DOCKERHUB_USER
+        DOCKER_USER = (params.DOCKERHUB_USER_PARAM && params.DOCKERHUB_USER_PARAM != "") ? params.DOCKERHUB_USER_PARAM : (env.DOCKERHUB_USER ?: 'bingsu1103')
+        
         TAG = "build-${env.BUILD_NUMBER}"
     }
 
@@ -22,9 +29,7 @@ pipeline {
         stage('Validate Parameters') {
             steps {
                 script {
-                    if (env.DOCKERHUB_USER == null && params.DOCKERHUB_USER_PARAM == "") {
-                        error "DOCKERHUB_USER is not set! Please configure it in Global Properties or pass it as DOCKERHUB_USER_PARAM."
-                    }
+                    echo "--- Starting Pipeline: Env: ${ENV_TARGET}, Backend Port: ${B_PORT}, Frontend Port: ${F_PORT} ---"
 
                 }
             }
@@ -52,9 +57,9 @@ pipeline {
                     string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY'),
                     string(credentialsId: 'rds-db-password', variable: 'DB_PASS')
                 ]) {
-                    dir("infrastructure/envs/${params.ENVIRONMENT}") {
+                    dir("infrastructure/envs/${ENV_TARGET}") {
                         sh 'terraform init'
-                        sh "terraform apply -var='db_password=${env.DB_PASS}' -var='backend_port=${params.BACKEND_PORT}' -var='frontend_port=${params.FRONTEND_PORT}' -auto-approve"
+                        sh "terraform apply -var='db_password=${env.DB_PASS}' -var='backend_port=${B_PORT}' -var='frontend_port=${F_PORT}' -auto-approve"
                         
                         script {
                             // Extract IP from Terraform Output
@@ -70,7 +75,7 @@ pipeline {
                             echo "Current Deployment IP - Backend: ${env.BACKEND_IP}, Frontend: ${env.FRONTEND_IP}"
 
                             // Generate Ansible inventory from template
-                            def inventoryTplPath = "${env.WORKSPACE}/ansible/inventory/${params.ENVIRONMENT}.ini.example"
+                            def inventoryTplPath = "${env.WORKSPACE}/ansible/inventory/${ENV_TARGET}.ini.example"
                             def inventoryTpl = readFile(inventoryTplPath)
                             def activeInventory = inventoryTpl
                                 .replace("{{ BACKEND_IP }}", env.BACKEND_IP)
@@ -78,7 +83,7 @@ pipeline {
                                 .replace("{{ RDS_HOST }}", env.RDS_HOST)
                                 .replace("{{ DB_PASS }}", env.DB_PASS)
                             
-                            writeFile(file: "${env.WORKSPACE}/ansible/inventory/${params.ENVIRONMENT}.ini", text: activeInventory)
+                            writeFile(file: "${env.WORKSPACE}/ansible/inventory/${ENV_TARGET}.ini", text: activeInventory)
                         }
                     }
                 }
@@ -90,8 +95,8 @@ pipeline {
                 script {
                     sh "chmod +x ci-cd/scripts/*.sh"
                     withEnv([
-                        "NEXT_PUBLIC_API_URL=http://${env.BACKEND_IP}:${params.BACKEND_PORT}",
-                        "DOCKERHUB_USER=${env.DOCKER_USER}"
+                        "NEXT_PUBLIC_API_URL=http://${env.BACKEND_IP}:${B_PORT}",
+                        "DOCKERHUB_USER=${DOCKER_USER}"
                     ]) {
                         sh "./ci-cd/scripts/build.sh ${TAG}"
                     }
@@ -116,8 +121,8 @@ pipeline {
             steps {
                     sshagent(['ec2-ssh-key']) {
                         dir('ansible') {
-                            sh "ansible-playbook -i inventory/${params.ENVIRONMENT}.ini playbooks/setup.yml"
-                            sh "ansible-playbook -i inventory/${params.ENVIRONMENT}.ini playbooks/deploy.yml --extra-vars 'image_tag=${TAG} docker_user=${env.DOCKER_USER} backend_port=${params.BACKEND_PORT} frontend_port=${params.FRONTEND_PORT}'"
+                            sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/setup.yml"
+                            sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/deploy.yml --extra-vars 'image_tag=${TAG} docker_user=${DOCKER_USER} backend_port=${B_PORT} frontend_port=${F_PORT}'"
 
                         }
                     }
@@ -127,7 +132,7 @@ pipeline {
 
     post {
         always {
-            echo "--- Pipeline for ${params.ENVIRONMENT} environment completed ---"
+            echo "--- Pipeline for ${ENV_TARGET} environment completed ---"
         }
     }
 }
