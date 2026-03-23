@@ -1,0 +1,17 @@
+---
+- name: Install Nginx on Amazon Linux 2023
+  dnf:
+    name: nginx
+    state: present
+
+- name: Deploy Nginx Reverse Proxy Config
+  template:
+    src: app.conf.j2
+    dest: /etc/nginx/conf.d/app.conf
+  notify: restart nginx
+
+- name: Ensure Nginx is started and enabled
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes

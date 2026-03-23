@@ -23,3 +23,5 @@
         image_name: "devops-frontend"
         container_name: "frontend"
         app_port: 3000
+        app_env:
+          NEXT_PUBLIC_API_URL: "http://{{ hostvars['backend_server']['ansible_host'] }}:7070/api/products"
