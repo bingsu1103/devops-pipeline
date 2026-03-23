@@ -72,7 +72,10 @@ pipeline {
                             env.FRONTEND_IP = frontend_ip
                             env.RDS_HOST = rds_host
 
-                            echo "Current Deployment IP - Backend: ${env.BACKEND_IP}, Frontend: ${env.FRONTEND_IP}"
+                            echo "--- Service Access Information ---"
+                            echo "Backend: http://${env.BACKEND_IP}:${B_PORT}"
+                            echo "Frontend: http://${env.FRONTEND_IP}:${F_PORT}"
+                            echo "----------------------------------"
 
                             // Generate Ansible inventory from template
                             def inventoryTplPath = "${env.WORKSPACE}/ansible/inventory/${ENV_TARGET}.ini.example"
