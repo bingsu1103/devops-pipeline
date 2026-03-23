@@ -11,6 +11,7 @@ pipeline {
 
 
     environment {
+        PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
         DOCKER_USER = "${params.DOCKERHUB_USER_PARAM}"
         TAG = "build-${env.BUILD_NUMBER}"
