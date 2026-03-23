@@ -9,34 +9,34 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "products")
+@Table(name = "examples")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Product {
+public class Example {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Product name is required")
+    @NotBlank(message = "Service name is required")
     @Column(nullable = false)
     private String name;
 
     @Column(length = 1000)
     private String description;
 
-    @NotNull(message = "Price is required")
-    @Min(value = 0, message = "Price must be >= 0")
+    @NotNull(message = "Version is required")
+    @Min(value = 0, message = "Version must be >= 0")
     @Column(nullable = false)
-    private Double price;
+    private Double version;
 
-    @NotNull(message = "Quantity is required")
-    @Min(value = 0, message = "Quantity must be >= 0")
+    @NotNull(message = "Build Count is required")
+    @Min(value = 0, message = "Build Count must be >= 0")
     @Column(nullable = false)
-    private Integer quantity;
+    private Integer buildCount;
 
     @Column(updatable = false)
     private LocalDateTime createdAt;
