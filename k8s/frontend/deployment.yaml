@@ -20,4 +20,4 @@ spec:
             - containerPort: 3000
           env:
             - name: NEXT_PUBLIC_API_URL
-              value: "http://backend-service:80/api" # K8s Service Discovery tự dẫn đường
+              value: "http://backend-service:7070/api/products" # Sửa từ 80 -> 7070

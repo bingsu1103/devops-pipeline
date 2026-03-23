@@ -8,6 +8,6 @@ spec:
     app: backend
   ports:
     - protocol: TCP
-      port: 80 # Service port (cổng nội bộ K8s)
-      targetPort: 7070 # Cổng thực tế của App trong container
+      port: 7070 # Thay đổi từ 80 -> 7070 cho đồng bộ
+      targetPort: 7070
   type: ClusterIP # Chỉ truy cập bên trong cluster hoặc qua Ingress
