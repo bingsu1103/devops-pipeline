@@ -1,15 +1,33 @@
 pipeline {
     agent any
 
+    parameters {
+        choice(name: 'ENVIRONMENT', choices: ['dev', 'prod'], description: 'Select the environment to deploy')
+        string(name: 'BACKEND_PORT', defaultValue: '', description: 'Enter Port for the Backend service (Required)')
+        string(name: 'FRONTEND_PORT', defaultValue: '', description: 'Enter Port for the Frontend service (Required)')
+
+        string(name: 'DOCKERHUB_USER_PARAM', defaultValue: '', description: 'Enter your Docker Hub Username (Required)')
+    }
+
+
     environment {
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
-        DOCKERHUB_USER = 'bingsu1103'
+        DOCKER_USER = "${params.DOCKERHUB_USER_PARAM}"
         TAG = "build-${env.BUILD_NUMBER}"
-        // Hỗ trợ cả Intel Mac (/usr/local/bin) và Apple Silicon Mac (/opt/homebrew/bin)
-        PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Applications/Docker.app/Contents/Resources/bin:${env.PATH}"
     }
 
     stages {
+        stage('Validate Parameters') {
+            steps {
+                script {
+                    if (params.DOCKERHUB_USER_PARAM == "" || params.BACKEND_PORT == "" || params.FRONTEND_PORT == "") {
+                        error "DOCKERHUB_USER_PARAM, BACKEND_PORT and FRONTEND_PORT are required! Please provide them when building."
+                    }
+
+                }
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 checkout scm
@@ -29,14 +47,15 @@ pipeline {
             steps {
                 withCredentials([
                     string(credentialsId: 'aws-access-key', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY')
+                    string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'rds-db-password', variable: 'DB_PASS')
                 ]) {
-                    dir('infrastructure/envs/dev') {
+                    dir("infrastructure/envs/${params.ENVIRONMENT}") {
                         sh 'terraform init'
-                        sh "terraform apply -auto-approve"
+                        sh "terraform apply -var='db_password=${env.DB_PASS}' -var='backend_port=${params.BACKEND_PORT}' -var='frontend_port=${params.FRONTEND_PORT}' -auto-approve"
                         
                         script {
-                            // Lay IP tu Terraform Output
+                            // Extract IP from Terraform Output
                             def backend_ip = sh(script: "terraform output -raw backend_public_ip", returnStdout: true).trim()
                             def frontend_ip = sh(script: "terraform output -raw frontend_public_ip", returnStdout: true).trim()
                             def rds_endpoint_full = sh(script: "terraform output -raw rds_endpoint", returnStdout: true).trim()
@@ -46,16 +65,18 @@ pipeline {
                             env.FRONTEND_IP = frontend_ip
                             env.RDS_HOST = rds_host
 
-                            echo "Backend IP: ${env.BACKEND_IP}"
+                            echo "Current Deployment IP - Backend: ${env.BACKEND_IP}, Frontend: ${env.FRONTEND_IP}"
 
-                            // Cap nhat file inventory cua Ansible
-                            dir('../../../ansible') {
-                                sh "sed -i '' 's/backend_server ansible_host=[^ ]*/backend_server ansible_host=${env.BACKEND_IP}/g' inventory/dev.ini"
-                                sh "sed -i '' 's/frontend_server ansible_host=[^ ]*/frontend_server ansible_host=${env.FRONTEND_IP}/g' inventory/dev.ini"
-                                sh "sed -i '' 's/db_host=.*/db_host=${env.RDS_HOST}/g' inventory/dev.ini"
-                                sh "sed -i '' 's/db_name=.*/db_name=devops_db/g' inventory/dev.ini"
-                                sh "sed -i '' 's/db_password=.*/db_password=dev-db-pass/g' inventory/dev.ini"
-                            }
+                            // Generate Ansible inventory from template
+                            def inventoryTplPath = "${env.WORKSPACE}/ansible/inventory/${params.ENVIRONMENT}.ini.example"
+                            def inventoryTpl = readFile(inventoryTplPath)
+                            def activeInventory = inventoryTpl
+                                .replace("{{ BACKEND_IP }}", env.BACKEND_IP)
+                                .replace("{{ FRONTEND_IP }}", env.FRONTEND_IP)
+                                .replace("{{ RDS_HOST }}", env.RDS_HOST)
+                                .replace("{{ DB_PASS }}", env.DB_PASS)
+                            
+                            writeFile(file: "${env.WORKSPACE}/ansible/inventory/${params.ENVIRONMENT}.ini", text: activeInventory)
                         }
                     }
                 }
@@ -66,8 +87,10 @@ pipeline {
             steps {
                 script {
                     sh "chmod +x ci-cd/scripts/*.sh"
-                    // Truyen link API vao de build frontend
-                    withEnv(["NEXT_PUBLIC_API_URL=http://${env.BACKEND_IP}:7070"]) {
+                    withEnv([
+                        "NEXT_PUBLIC_API_URL=http://${env.BACKEND_IP}:${params.BACKEND_PORT}",
+                        "DOCKERHUB_USER=${env.DOCKER_USER}"
+                    ]) {
                         sh "./ci-cd/scripts/build.sh ${TAG}"
                     }
                 }
@@ -79,7 +102,9 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                         sh "docker login -u ${USER} -p ${PASS}"
-                        sh "./ci-cd/scripts/push.sh ${TAG}"
+                        withEnv(["DOCKERHUB_USER=${env.DOCKER_USER}"]) {
+                            sh "./ci-cd/scripts/push.sh ${TAG}"
+                        }
                     }
                 }
             }
@@ -87,25 +112,21 @@ pipeline {
 
         stage('Configuration & Deploy') {
             steps {
-                script {
-                    dir('ansible') {
-                        sh "ansible-playbook -i inventory/dev.ini playbooks/setup.yml"
-                        sh "ansible-playbook -i inventory/dev.ini playbooks/deploy.yml --extra-vars 'image_tag=${TAG}'"
+                    sshagent(['ec2-ssh-key']) {
+                        dir('ansible') {
+                            sh "ansible-playbook -i inventory/${params.ENVIRONMENT}.ini playbooks/setup.yml"
+                            sh "ansible-playbook -i inventory/${params.ENVIRONMENT}.ini playbooks/deploy.yml --extra-vars 'image_tag=${TAG} docker_user=${env.DOCKER_USER} backend_port=${params.BACKEND_PORT} frontend_port=${params.FRONTEND_PORT}'"
+
+                        }
                     }
-                }
             }
         }
     }
 
     post {
         always {
-            echo "--- Pipeline completed ---"
-        }
-        success {
-            echo "--- Build successful! ---"
-        }
-        failure {
-            echo "--- Build failed. Please check logs. ---"
+            echo "--- Pipeline for ${params.ENVIRONMENT} environment completed ---"
         }
     }
 }
+
