@@ -1,6 +1,12 @@
 variable "region" { default = "ap-southeast-1" }
-variable "access_key" { type = string; sensitive = true }
-variable "secret_key" { type = string; sensitive = true }
+variable "access_key" {
+  type      = string
+  sensitive = true
+}
+variable "secret_key" {
+  type      = string
+  sensitive = true
+}
 variable "env" { default = "prod" }
 variable "vpc_cidr" { default = "172.16.0.0/16" }
 variable "instance_type" { default = "t4g.small" }
