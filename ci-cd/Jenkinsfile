@@ -5,8 +5,8 @@ pipeline {
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
         DOCKERHUB_USER = 'bingsu1103'
         TAG = "build-${env.BUILD_NUMBER}"
-        // Đảm bảo Jenkins tìm thấy Docker trên MacOS
-        PATH = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Applications/Docker.app/Contents/Resources/bin:${env.PATH}"
+        // Hỗ trợ cả Intel Mac (/usr/local/bin) và Apple Silicon Mac (/opt/homebrew/bin)
+        PATH = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Applications/Docker.app/Contents/Resources/bin:${env.PATH}"
     }
 
     stages {
