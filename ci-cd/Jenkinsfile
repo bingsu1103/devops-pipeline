@@ -21,6 +21,9 @@ pipeline {
             steps {
                 script {
                     echo "--- [Configuration as Code] Bắt đầu nạp cấu hình ---"
+
+                    sh "git rev-parse HEAD"
+                    sh "cat application.properties"
                     
                     // Hàm helper để parse file properties thủ công (Tránh lỗi Sandbox với java.util.Properties)
                     def parseProps = { filePath ->
