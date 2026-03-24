@@ -8,7 +8,7 @@ variable "allocated_storage" { default = 50 }
 variable "db_instance_class" { default = "db.t3.medium" }
 variable "db_name" { default = "prod_db" }
 variable "db_user" { default = "prodadmin" }
-variable "db_password" { default = "prod-db-pass" }
-variable "backend_port" { default = 7070 }
-variable "frontend_port" { default = 3000 }
-variable "ssh_key" { default = "AWS_key_pair" }
+variable "db_password" {}
+variable "backend_port" {}
+variable "frontend_port" {}
+variable "ssh_key" {}
