@@ -1,13 +1,13 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: backend-service
-  namespace: devops-app
-spec:
-  selector:
-    app: backend
-  ports:
-    - protocol: TCP
-      port: 7070 # Thay đổi từ 80 -> 7070 cho đồng bộ
-      targetPort: 7070
-  type: ClusterIP # Chỉ truy cập bên trong cluster hoặc qua Ingress
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: backend-service
+#   namespace: devops-app
+# spec:
+#   selector:
+#     app: backend
+#   ports:
+#     - protocol: TCP
+#       port: 7070 # Thay doi tu 80 -> 7070 cho dong bo
+#       targetPort: 7070
+#   type: ClusterIP # Chi truy cap ben trong cluster hoac qua Ingress

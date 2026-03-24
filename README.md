@@ -1,6 +1,6 @@
 # DevOps Pipeline - Full-stack Infrastructure & CI/CD Boilerplate
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-brightgreen)](https://spring.io/projects/spring-boot)
 [![Terraform](https://img.shields.io/badge/Terraform-Infrastructure-blue)](https://www.terraform.io/)
 [![Ansible](https://img.shields.io/badge/Ansible-Deployment-red)](https://www.ansible.com/)
@@ -176,7 +176,7 @@ In the `Jenkinsfile`, notice the **Infrastructure Provisioning** stage:
 ├── frontend/           # Next.js 15 Application (Port 3000)
 ├── infrastructure/     # Terraform Envs (Dev/Prod)
 ├── ci-cd/              # Jenkinsfile & Build Scripts
-├── k8s/                # Kubernetes Manifests
+<!-- ├── k8s/                # Kubernetes Manifests (currently not used) -->
 └── docker-compose.yml  # Local multi-container setup
 ```
 

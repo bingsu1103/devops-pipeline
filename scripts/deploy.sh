@@ -21,12 +21,12 @@ cd ../../../ansible
 ansible-playbook -i inventory/dev.ini playbooks/setup.yml
 ansible-playbook -i inventory/dev.ini playbooks/deploy.yml
 
-# 4. K8s (Điều phối Container)
-echo "--- Step 3: Deploying to Kubernetes ---"
-cd ../k8s
-kubectl apply -f namespace.yaml
-kubectl apply -f backend/
-kubectl apply -f frontend/
-kubectl apply -f ingress.yaml
+# 4. K8s (Dieu phoi Container) - hien chua dung trong flow hien tai
+# echo "--- Step 3: Deploying to Kubernetes ---"
+# cd ../k8s
+# kubectl apply -f namespace.yaml
+# kubectl apply -f backend/
+# kubectl apply -f frontend/
+# kubectl apply -f ingress.yaml
 
 echo "✅ ALL STEPS COMPLETED SUCCESSFULLY!"

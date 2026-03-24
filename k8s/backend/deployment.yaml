@@ -1,31 +1,31 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: backend-deployment
-  namespace: devops-app
-spec:
-  replicas: 2 # Luôn chạy 2 máy để dự phòng
-  selector:
-    matchLabels:
-      app: backend
-  template:
-    metadata:
-      labels:
-        app: backend
-    spec:
-      containers:
-        - name: backend
-          image: bingsu1103/devops-backend:latest
-          ports:
-            - containerPort: 7070
-          env:
-            - name: SPRING_DATASOURCE_URL
-              value: "jdbc:postgresql://YOUR_RDS_ENDPOINT:5432/dev_inventory_db"
-            - name: SPRING_DATASOURCE_USERNAME
-              value: "dbadmin"
-            - name: SPRING_DATASOURCE_PASSWORD
-              value: "REPLACE_WITH_ACTUAL_DB_PASSWORD" # Nên dùng K8s Secret nhưng demo dùng env cho dễ hiểu
-            - name: SPRING_DATASOURCE_DRIVER
-              value: "org.postgresql.Driver"
-            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
-              value: "update"
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: backend-deployment
+#   namespace: devops-app
+# spec:
+#   replicas: 2 # Luon chay 2 may de du phong
+#   selector:
+#     matchLabels:
+#       app: backend
+#   template:
+#     metadata:
+#       labels:
+#         app: backend
+#     spec:
+#       containers:
+#         - name: backend
+#           image: bingsu1103/devops-backend:latest
+#           ports:
+#             - containerPort: 7070
+#           env:
+#             - name: SPRING_DATASOURCE_URL
+#               value: "jdbc:postgresql://YOUR_RDS_ENDPOINT:5432/dev_inventory_db"
+#             - name: SPRING_DATASOURCE_USERNAME
+#               value: "dbadmin"
+#             - name: SPRING_DATASOURCE_PASSWORD
+#               value: "REPLACE_WITH_ACTUAL_DB_PASSWORD" # Nen dung K8s Secret nhung demo dung env cho de hieu
+#             - name: SPRING_DATASOURCE_DRIVER
+#               value: "org.postgresql.Driver"
+#             - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+#               value: "update"
