@@ -22,31 +22,40 @@ pipeline {
                 script {
                     echo "--- [Configuration as Code] Bắt đầu nạp cấu hình ---"
                     
-                    // 1. Xác định môi trường mục tiêu (ENV_TARGET) từ file gốc
-                    def rootConfigFile = 'application.properties'
-                    if (fileExists(rootConfigFile)) {
-                        def propsText = readFile(rootConfigFile)
-                        def props = new Properties()
-                        props.load(new StringReader(propsText))
-                        
-                        env.ENV_TARGET = props.getProperty('ENV_TARGET', 'dev')
-                        echo "Môi trường mục tiêu: ${env.ENV_TARGET} (Lấy từ ${rootConfigFile})"
-                    } else {
-                        echo "Không tìm thấy file ${rootConfigFile}, mặc định dùng: ${env.ENV_TARGET}"
+                    // Hàm helper để parse file properties thủ công (Tránh lỗi Sandbox với java.util.Properties)
+                    def parseProps = { filePath ->
+                        def propsMap = [:]
+                        if (fileExists(filePath)) {
+                            def content = readFile(filePath)
+                            content.split("\n").each { line ->
+                                if (line.contains("=") && !line.trim().startsWith("#")) {
+                                    def parts = line.split("=", 2)
+                                    propsMap[parts[0].trim()] = parts[1].trim()
+                                }
+                            }
+                        }
+                        return propsMap
                     }
 
-                    // 2. Nạp cấu hình chi tiết từ thư mục môi trường cụ thể
+                    // 1. Xác định môi trường mục tiêu (ENV_TARGET) từ file gốc
+                    def rootProps = parseProps('application.properties')
+                    if (rootProps['ENV_TARGET']) {
+                        env.ENV_TARGET = rootProps['ENV_TARGET']
+                        echo "Môi trường mục tiêu: ${env.ENV_TARGET} (Lấy từ application.properties)"
+                    } else {
+                        echo "Dùng môi trường mặc định: ${env.ENV_TARGET}"
+                    }
+
+                    // 2. Nạp cấu hình chi tiết từ thư mục môi trường tương ứng
                     def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
-                    if (fileExists(envConfigFile)) {
-                        def propsText = readFile(envConfigFile)
-                        def props = new Properties()
-                        props.load(new StringReader(propsText))
-                        
-                        // Áp dụng cấu hình từ file properties vào environment của Jenkins
-                        env.B_PORT       = props.getProperty('BACKEND_PORT', '7070')
-                        env.F_PORT       = props.getProperty('FRONTEND_PORT', '3000')
-                        env.DOCKER_USER  = props.getProperty('DOCKER_USER', 'bingsu1103')
-                        env.AWS_SSH_KEY  = props.getProperty('AWS_SSH_KEY_NAME', 'AWS_key_pair')
+                    def props = parseProps(envConfigFile)
+                    
+                    if (props.size() > 0) {
+                        // Áp dụng cấu hình vào environment
+                        env.B_PORT       = props['BACKEND_PORT'] ?: '7070'
+                        env.F_PORT       = props['FRONTEND_PORT'] ?: '3000'
+                        env.DOCKER_USER  = props['DOCKER_USER'] ?: 'bingsu1103'
+                        env.AWS_SSH_KEY  = props['AWS_SSH_KEY_NAME'] ?: 'AWS_key_pair'
                         
                         echo "--- Cấu hình hoàn tất cho môi trường: ${env.ENV_TARGET} ---"
                         echo "  + Backend Port: ${env.B_PORT}"
@@ -54,7 +63,7 @@ pipeline {
                         echo "  + Docker User : ${env.DOCKER_USER}"
                         echo "  + AWS SSH Key : ${env.AWS_SSH_KEY}"
                     } else {
-                        error "Không tìm thấy file cấu hình tại ${envConfigFile}. Kiểm tra lại thư mục infrastructure!"
+                        error "Không tìm thấy hoặc file cấu hình rỗng tại ${envConfigFile}!"
                     }
                 }
             }
