@@ -42,10 +42,15 @@ pipeline {
 
                     // 1. Xác định môi trường mục tiêu (ENV_TARGET) từ file gốc
                     def rootProps = parseProps('application.properties')
-                    def envTargetFromFile = sh(
-                        script: "grep -E '^ENV_TARGET=' application.properties | tail -n 1 | cut -d= -f2 | tr -d '\\r'",
-                        returnStdout: true
-                    ).trim()
+                    def rawConfig = readFile('application.properties')
+                    def envLine = rawConfig.readLines().find { line ->
+                        def cleaned = line.replaceAll('^\\uFEFF', '').trim()
+                        return cleaned.startsWith('ENV_TARGET=')
+                    }
+                    def envTargetFromFile = ''
+                    if (envLine) {
+                        envTargetFromFile = envLine.split('=', 2)[1].trim()
+                    }
                     if (envTargetFromFile) {
                         env.ENV_TARGET = envTargetFromFile
                     } else if (rootProps['ENV_TARGET']) {
@@ -210,7 +215,10 @@ pipeline {
 
     post {
         always {
-            echo "--- Pipeline for ${ENV_TARGET} environment completed ---"
+            script {
+                def envLabel = env.ENV_TARGET ?: 'unknown'
+                echo "--- Pipeline for ${envLabel} environment completed ---"
+            }
         }
     }
 }
