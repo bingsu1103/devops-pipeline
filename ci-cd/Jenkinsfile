@@ -124,8 +124,12 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
+                    // Tạo thư mục config tạm để tránh lỗi docker-credential-desktop trên Mac
+                    sh "mkdir -p .docker_config && echo '{}' > .docker_config/config.json"
                     sh "chmod +x ci-cd/scripts/*.sh"
+                    
                     withEnv([
+                        "DOCKER_CONFIG=${env.WORKSPACE}/.docker_config",
                         "NEXT_PUBLIC_API_URL=http://${env.BACKEND_IP}:${B_PORT}",
                         "DOCKERHUB_USER=${DOCKER_USER}"
                     ]) {
@@ -139,9 +143,11 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                        sh "docker login -u ${USER} -p ${PASS}"
-                        withEnv(["DOCKERHUB_USER=${env.DOCKER_USER}"]) {
-                            sh "./ci-cd/scripts/push.sh ${TAG}"
+                        withEnv(["DOCKER_CONFIG=${env.WORKSPACE}/.docker_config"]) {
+                            sh "docker login -u ${USER} -p ${PASS}"
+                            withEnv(["DOCKERHUB_USER=${env.DOCKER_USER}"]) {
+                                sh "./ci-cd/scripts/push.sh ${TAG}"
+                            }
                         }
                     }
                 }
