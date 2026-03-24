@@ -17,6 +17,7 @@
     dest: /etc/nginx/conf.d/app.conf
   vars:
     ssl_enabled: false
+    render_ssl: false
   notify: restart nginx
 
 - name: Validate Nginx config (base)
@@ -48,6 +49,8 @@
     src: app.conf.j2
     dest: /etc/nginx/conf.d/app.conf
   when: ssl_enabled | default(false) | bool
+  vars:
+    render_ssl: true
   notify: restart nginx
 
 - name: Validate Nginx config (SSL)

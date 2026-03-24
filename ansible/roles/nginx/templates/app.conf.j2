@@ -1,4 +1,5 @@
-{% if ssl_enabled | default(false) %}
+{% set render_ssl = render_ssl | default(ssl_enabled | default(false) | bool) %}
+{% if render_ssl %}
 server {
     listen 80;
     server_name {{ domain_name | default('localhost') }};
