@@ -144,9 +144,10 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                         withEnv(["DOCKER_CONFIG=${env.WORKSPACE}/.docker_config"]) {
-                            sh "docker login -u ${USER} -p ${PASS}"
+                            // Clear proxies for docker login to bypass 'HTTP response to HTTPS client' error if proxy is misconfigured/intercepting
+                            sh "HTTP_PROXY='' HTTPS_PROXY='' docker login -u ${USER} -p ${PASS}"
                             withEnv(["DOCKERHUB_USER=${env.DOCKER_USER}"]) {
-                                sh "./ci-cd/scripts/push.sh ${TAG}"
+                                sh "HTTP_PROXY='' HTTPS_PROXY='' ./ci-cd/scripts/push.sh ${TAG}"
                             }
                         }
                     }
