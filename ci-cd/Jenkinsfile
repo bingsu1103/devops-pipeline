@@ -24,29 +24,12 @@ pipeline {
 
                     sh "git rev-parse HEAD"
                     sh "cat application.properties"
-                    
-                    // Hàm helper để parse file properties thủ công (Tránh lỗi Sandbox với java.util.Properties)
-                    def parseProps = { filePath ->
-                        def propsMap = [:]
-                        if (fileExists(filePath)) {
-                            def content = readFile(filePath)
-                            content.split("\n").each { line ->
-                                if (line.contains("=") && !line.trim().startsWith("#")) {
-                                    def parts = line.split("=", 2)
-                                    def key = parts[0].replaceAll('^\\uFEFF', '').trim()
-                                    def value = parts[1].replaceAll('\\r', '').trim()
-                                    propsMap[key] = value
-                                }
-                            }
-                        }
-                        return propsMap
-                    }
 
                     // 1. Xác định môi trường mục tiêu (ENV_TARGET) từ file gốc
-                    def rootProps = parseProps('application.properties')
-                    if (rootProps['ENV_TARGET']) {
-                        env.ENV_TARGET = rootProps['ENV_TARGET']
-                    }
+                    env.ENV_TARGET = sh(
+                        script: "awk -F= '/^ENV_TARGET=/{print \$2}' application.properties | tail -n 1 | tr -d '\\r' | xargs",
+                        returnStdout: true
+                    ).trim()
 
                     if (!env.ENV_TARGET) {
                         error "ENV_TARGET is required. Set it in application.properties to 'dev' or 'prod'."
@@ -56,7 +39,7 @@ pipeline {
 
                     // 2. Nạp cấu hình chi tiết từ thư mục môi trường tương ứng
                     def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
-                    def props = parseProps(envConfigFile)
+                    def props = readProperties(file: envConfigFile)
                     
                     if (props.size() > 0) {
                         // Áp dụng cấu hình vào environment
