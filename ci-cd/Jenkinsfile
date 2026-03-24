@@ -57,11 +57,19 @@ pipeline {
                         env.DOCKER_USER  = props['DOCKER_USER'] ?: 'bingsu1103'
                         env.AWS_SSH_KEY  = props['AWS_SSH_KEY_NAME'] ?: 'AWS_key_pair'
                         
+                        // Domain & SSL config (frontend/backend can be different)
+                        env.FRONTEND_DOMAIN_NAME = props['FRONTEND_DOMAIN_NAME'] ?: (props['DOMAIN_NAME'] ?: '')
+                        env.BACKEND_DOMAIN_NAME  = props['BACKEND_DOMAIN_NAME'] ?: (props['API_DOMAIN_NAME'] ?: '')
+                        env.SSL_ENABLED    = props['SSL_ENABLED'] ?: 'false'
+                        env.CERTBOT_EMAIL  = props['CERTBOT_EMAIL'] ?: 'admin@example.com'
+                        
                         echo "--- Cấu hình hoàn tất cho môi trường: ${env.ENV_TARGET} ---"
                         echo "  + Backend Port: ${env.B_PORT}"
                         echo "  + Frontend Port: ${env.F_PORT}"
                         echo "  + Docker User : ${env.DOCKER_USER}"
-                        echo "  + AWS SSH Key : ${env.AWS_SSH_KEY}"
+                        echo "  + fe domain   : ${env.FRONTEND_DOMAIN_NAME}"
+                        echo "  + be domain   : ${env.BACKEND_DOMAIN_NAME}"
+                        echo "  + SSL         : ${env.SSL_ENABLED}"
                     } else {
                         error "Không tìm thấy hoặc file cấu hình rỗng tại ${envConfigFile}!"
                     }
@@ -127,9 +135,14 @@ pipeline {
                     sh "mkdir -p .docker_config && echo '{}' > .docker_config/config.json"
                     sh "chmod +x ci-cd/scripts/*.sh"
                     
+                    // Tính toán API URL dựa trên Domain (Nếu có)
+                    def protocol = (env.SSL_ENABLED == 'true') ? 'https' : 'http'
+                    def api_url = (env.BACKEND_DOMAIN_NAME != '') ? "${protocol}://${env.BACKEND_DOMAIN_NAME}" : "http://${env.BACKEND_IP}:${B_PORT}"
+                    env.NEXT_PUBLIC_API_URL = api_url
+                    
                     withEnv([
                         "DOCKER_CONFIG=${env.WORKSPACE}/.docker_config",
-                        "NEXT_PUBLIC_API_URL=http://${env.BACKEND_IP}:${B_PORT}",
+                        "NEXT_PUBLIC_API_URL=${env.NEXT_PUBLIC_API_URL}",
                         "DOCKERHUB_USER=${DOCKER_USER}"
                     ]) {
                         sh "./ci-cd/scripts/build.sh ${TAG}"
@@ -160,7 +173,20 @@ pipeline {
                     withCredentials([string(credentialsId: 'rds-db-password', variable: 'DB_PASS')]) {
                         dir('ansible') {
                             sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/setup.yml"
-                            sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/deploy.yml --extra-vars \"image_tag=${TAG} docker_user=${DOCKER_USER} backend_port=${B_PORT} frontend_port=${F_PORT} db_password=\$DB_PASS\""
+                            
+                            def extraVars = "image_tag=${TAG} " +
+                                           "docker_user=${DOCKER_USER} " +
+                                           "b_port=${B_PORT} " +
+                                           "f_port=${F_PORT} " +
+                                           "db_password=\$DB_PASS " +
+                                           "frontend_domain_name=${env.FRONTEND_DOMAIN_NAME} " +
+                                           "backend_domain_name=${env.BACKEND_DOMAIN_NAME} " +
+                                           "ssl_enabled=${env.SSL_ENABLED} " +
+                                           "certbot_email=${env.CERTBOT_EMAIL} " +
+                                           "backend_host=${env.BACKEND_IP} " +
+                                           "next_public_api_url=${env.NEXT_PUBLIC_API_URL}"
+
+                            sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/deploy.yml --extra-vars '${extraVars}'"
                         }
                     }
                 }

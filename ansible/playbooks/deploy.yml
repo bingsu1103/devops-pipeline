@@ -1,13 +1,13 @@
 ---
 - name: Deploy Backend Service
   hosts: backend
-  become: yes
+  become: true
   roles:
     - role: app
       vars:
         image_name: "devops-backend"
         container_name: "backend"
-        app_port: "{{ backend_port }}"
+        app_port: "{{ b_port | default('7070') }}"
         app_env:
           SPRING_DATASOURCE_URL: "jdbc:postgresql://{{ db_host }}:{{ db_port | default(5432) }}/{{ db_name }}"
           SPRING_DATASOURCE_USERNAME: "{{ db_username }}"
@@ -15,17 +15,44 @@
           SPRING_DATASOURCE_DRIVER: "org.postgresql.Driver"
           SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
           SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
-          SERVER_PORT: "{{ backend_port }}"
+          SERVER_PORT: "{{ b_port | default('7070') }}"
 
 - name: Deploy Frontend Service
   hosts: frontend
-  become: yes
+  become: true
   roles:
     - role: app
       vars:
         image_name: "devops-frontend"
         container_name: "frontend"
-        app_port: "{{ frontend_port }}"
+        app_port: "{{ f_port | default('3000') }}"
         app_env:
-          PORT: "{{ frontend_port }}"
-          NEXT_PUBLIC_API_URL: "http://{{ hostvars['backend_server']['ansible_host'] }}:{{ backend_port }}"
+          PORT: "{{ f_port | default('3000') }}"
+          NEXT_PUBLIC_API_URL: "{{ next_public_api_url | default('http://localhost:7070') }}"
+
+- name: Setup Nginx Reverse Proxy
+  hosts: frontend
+  become: true
+  roles:
+    - role: nginx
+      vars:
+        domain_name: "{{ frontend_domain_name | default(domain_name | default('localhost')) }}"
+        ssl_enabled: "{{ ssl_enabled | default(false) | bool }}"
+        certbot_email: "{{ certbot_email | default('admin@example.com') }}"
+        backend_host: "{{ backend_host | default(hostvars[groups['backend'][0]].ansible_host) }}"
+        backend_port: "{{ b_port | default('7070') }}"
+        frontend_port: "{{ f_port | default('3000') }}"
+        proxy_mode: "frontend"
+
+- name: Setup Nginx API Reverse Proxy
+  hosts: backend
+  become: true
+  roles:
+    - role: nginx
+      vars:
+        domain_name: "{{ backend_domain_name | default('localhost') }}"
+        ssl_enabled: "{{ ssl_enabled | default(false) | bool }}"
+        certbot_email: "{{ certbot_email | default('admin@example.com') }}"
+        backend_host: "localhost"
+        backend_port: "{{ b_port | default('7070') }}"
+        proxy_mode: "backend"

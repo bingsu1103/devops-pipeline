@@ -1,17 +1,47 @@
 ---
-- name: Install Nginx on Amazon Linux 2023
+- name: Install Nginx
   dnf:
     name: nginx
     state: present
 
-- name: Deploy Nginx Reverse Proxy Config
+- name: Install Certbot and Python dependencies
+  dnf:
+    name:
+      - python3-certbot-nginx
+    state: present
+  when: ssl_enabled | default(false)
+
+- name: Deploy Nginx Base Config (without SSL)
   template:
     src: app.conf.j2
     dest: /etc/nginx/conf.d/app.conf
+  vars:
+    ssl_enabled: false
   notify: restart nginx
 
-- name: Ensure Nginx is started and enabled
+- name: Ensure Nginx is started
   systemd:
     name: nginx
     state: started
     enabled: yes
+
+- name: Force restart Nginx to apply base config
+  meta: flush_handlers
+
+- name: Generate SSL certification with Certbot
+  command: >
+    certbot certonly --nginx
+    -d {{ domain_name }}
+    --non-interactive
+    --agree-tos
+    --email {{ certbot_email | default('admin@example.com') }}
+  args:
+    creates: "/etc/letsencrypt/live/{{ domain_name }}/fullchain.pem"
+  when: ssl_enabled | default(false)
+
+- name: Re-deploy Nginx Config (with SSL)
+  template:
+    src: app.conf.j2
+    dest: /etc/nginx/conf.d/app.conf
+  when: ssl_enabled | default(false)
+  notify: restart nginx
