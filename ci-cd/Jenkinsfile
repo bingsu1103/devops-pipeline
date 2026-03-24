@@ -171,22 +171,24 @@ pipeline {
             steps {
                 sshagent(['ec2-ssh-key']) {
                     withCredentials([string(credentialsId: 'rds-db-password', variable: 'DB_PASS')]) {
-                        dir('ansible') {
-                            sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/setup.yml"
-                            
-                            def extraVars = "image_tag=${TAG} " +
-                                           "docker_user=${DOCKER_USER} " +
-                                           "b_port=${B_PORT} " +
-                                           "f_port=${F_PORT} " +
-                                           "db_password=\$DB_PASS " +
-                                           "frontend_domain_name=${env.FRONTEND_DOMAIN_NAME} " +
-                                           "backend_domain_name=${env.BACKEND_DOMAIN_NAME} " +
-                                           "ssl_enabled=${env.SSL_ENABLED} " +
-                                           "certbot_email=${env.CERTBOT_EMAIL} " +
-                                           "backend_host=${env.BACKEND_IP} " +
-                                           "next_public_api_url=${env.NEXT_PUBLIC_API_URL}"
+                        script {
+                            dir('ansible') {
+                                sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/setup.yml"
 
-                            sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/deploy.yml --extra-vars '${extraVars}'"
+                                def extraVars = "image_tag=${TAG} " +
+                                               "docker_user=${DOCKER_USER} " +
+                                               "b_port=${B_PORT} " +
+                                               "f_port=${F_PORT} " +
+                                               "db_password=\$DB_PASS " +
+                                               "frontend_domain_name=${env.FRONTEND_DOMAIN_NAME} " +
+                                               "backend_domain_name=${env.BACKEND_DOMAIN_NAME} " +
+                                               "ssl_enabled=${env.SSL_ENABLED} " +
+                                               "certbot_email=${env.CERTBOT_EMAIL} " +
+                                               "backend_host=${env.BACKEND_IP} " +
+                                               "next_public_api_url=${env.NEXT_PUBLIC_API_URL}"
+
+                                sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/deploy.yml --extra-vars '${extraVars}'"
+                            }
                         }
                     }
                 }
