@@ -33,7 +33,9 @@ pipeline {
                             content.split("\n").each { line ->
                                 if (line.contains("=") && !line.trim().startsWith("#")) {
                                     def parts = line.split("=", 2)
-                                    propsMap[parts[0].trim()] = parts[1].trim()
+                                    def key = parts[0].replaceAll('^\\uFEFF', '').trim()
+                                    def value = parts[1].replaceAll('\\r', '').trim()
+                                    propsMap[key] = value
                                 }
                             }
                         }
@@ -42,19 +44,8 @@ pipeline {
 
                     // 1. Xác định môi trường mục tiêu (ENV_TARGET) từ file gốc
                     def rootProps = parseProps('application.properties')
-                    def rawConfig = readFile('application.properties')
-                    def envLine = rawConfig.readLines().find { line ->
-                        def cleaned = line.replaceAll('^\\uFEFF', '').trim()
-                        return cleaned.startsWith('ENV_TARGET=')
-                    }
-                    def envTargetFromFile = ''
-                    if (envLine) {
-                        envTargetFromFile = envLine.split('=', 2)[1].trim()
-                    }
-                    if (envTargetFromFile) {
-                        env.ENV_TARGET = envTargetFromFile
-                    } else if (rootProps['ENV_TARGET']) {
-                        env.ENV_TARGET = rootProps['ENV_TARGET'].trim()
+                    if (rootProps['ENV_TARGET']) {
+                        env.ENV_TARGET = rootProps['ENV_TARGET']
                     }
 
                     if (!env.ENV_TARGET) {
