@@ -8,8 +8,8 @@ env = "prod"
 # Networking
 vpc_cidr = "172.16.0.0/16"
 
-# Compute (Production Instances)
-instance_type = "t4g.small"
+# Compute (Aligned with Dev for quota/free-plan safety)
+instance_type = "t4g.micro"
 
 # Database (Production RDS)
 db_engine         = "postgres"

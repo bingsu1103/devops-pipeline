@@ -1,7 +1,7 @@
 variable "region" { default = "ap-southeast-1" }
 variable "env" { default = "prod" }
 variable "vpc_cidr" { default = "172.16.0.0/16" }
-variable "instance_type" { default = "t4g.small" }
+variable "instance_type" { default = "t4g.micro" }
 variable "db_engine" { default = "postgres" }
 variable "db_port" { default = 5432 }
 variable "allocated_storage" { default = 20 }
