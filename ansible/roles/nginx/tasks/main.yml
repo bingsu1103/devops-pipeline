@@ -19,6 +19,10 @@
     ssl_enabled: false
   notify: restart nginx
 
+- name: Validate Nginx config (base)
+  command: nginx -t
+  changed_when: false
+
 - name: Ensure Nginx is started
   systemd:
     name: nginx
@@ -45,3 +49,8 @@
     dest: /etc/nginx/conf.d/app.conf
   when: ssl_enabled | default(false) | bool
   notify: restart nginx
+
+- name: Validate Nginx config (SSL)
+  command: nginx -t
+  changed_when: false
+  when: ssl_enabled | default(false) | bool
