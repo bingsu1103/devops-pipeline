@@ -18,46 +18,69 @@ pipeline {
         }
 
         stage('Load Configuration') {
-    steps {
-        script {
-            echo "--- [Configuration as Code] Bắt đầu nạp cấu hình ---"
-            
-            // Kiểm tra file tồn tại trước khi đọc
-            if (!fileExists('application.properties')) {
-                error "Không tìm thấy file application.properties tại thư mục gốc!"
+        stage('Load Configuration') {
+        steps {
+            script {
+                echo "--- [Configuration as Code] Bắt đầu nạp cấu hình ---"
+
+                // 1. Đọc file application.properties bằng Groovy thuần
+                if (!fileExists('application.properties')) {
+                    error "File application.properties không tồn tại!"
+                }
+
+                def content = readFile('application.properties')
+                def lines = content.split('\n')
+                def config = [:]
+
+                lines.each { line ->
+                    // Loại bỏ BOM, khoảng trắng thừa và bỏ qua dòng comment (#)
+                    def cleanLine = line.replaceAll('\uFEFF', '').trim()
+                    if (cleanLine && !cleanLine.startsWith('#') && cleanLine.contains('=')) {
+                        def parts = cleanLine.split('=', 2)
+                        config[parts[0].trim()] = parts[1].trim()
+                    }
+                }
+
+                // Gán giá trị và dùng .trim() một lần nữa cho chắc chắn
+                env.ENV_TARGET = config['ENV_TARGET']?.trim()
+
+                if (!env.ENV_TARGET) {
+                    echo "Nội dung file đọc được: \n${content}"
+                    error "LỖI: Không tìm thấy ENV_TARGET trong application.properties"
+                }
+
+                echo "Môi trường mục tiêu: ${env.ENV_TARGET}"
+
+                // 2. Nạp cấu hình chi tiết từ folder môi trường
+                def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
+                if (!fileExists(envConfigFile)) {
+                    error "Không tìm thấy file: ${envConfigFile}"
+                }
+
+                def envContent = readFile(envConfigFile)
+                def envLines = envContent.split('\n')
+                def envProps = [:]
+
+                envLines.each { line ->
+                    def cleanLine = line.trim()
+                    if (cleanLine && !cleanLine.startsWith('#') && cleanLine.contains('=')) {
+                        def parts = cleanLine.split('=', 2)
+                        envProps[parts[0].trim()] = parts[1].trim()
+                    }
+                }
+
+                // Áp dụng vào env (Dùng toán tử Elvis để tránh null)
+                env.B_PORT       = envProps['BACKEND_PORT'] ?: '7070'
+                env.F_PORT       = envProps['FRONTEND_PORT'] ?: '3000'
+                env.DOCKER_USER  = envProps['DOCKER_USER'] ?: 'bingsu1103'
+                env.AWS_SSH_KEY  = envProps['AWS_SSH_KEY_NAME'] ?: 'AWS_key_pair'
+                env.FRONTEND_DOMAIN_NAME = envProps['FRONTEND_DOMAIN_NAME'] ?: (envProps['DOMAIN_NAME'] ?: '')
+                env.BACKEND_DOMAIN_NAME  = envProps['BACKEND_DOMAIN_NAME'] ?: (envProps['API_DOMAIN_NAME'] ?: '')
+                env.SSL_ENABLED    = envProps['SSL_ENABLED'] ?: 'false'
+                env.CERTBOT_EMAIL  = envProps['CERTBOT_EMAIL'] ?: 'admin@example.com'
+
+                echo "--- Cấu hình hoàn tất cho: ${env.ENV_TARGET} ---"
             }
-
-            // Sử dụng readProperties thay vì tự parse thủ công
-            def rootProps = readProperties file: 'application.properties'
-            
-            // Lấy ENV_TARGET, trim triệt để các ký tự xuống dòng \r hoặc \n
-            env.ENV_TARGET = rootProps['ENV_TARGET']?.trim()
-
-            if (!env.ENV_TARGET) {
-                // Debug: In ra toàn bộ key để xem Jenkins thực sự đọc được gì
-                echo "Nội dung đọc được: ${rootProps}"
-                error "ENV_TARGET is required. Set it in application.properties to 'dev' or 'prod'."
-            }
-
-            echo "Môi trường mục tiêu: ${env.ENV_TARGET}"
-
-            // Nạp cấu hình chi tiết
-            def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
-            if (!fileExists(envConfigFile)) {
-                error "Không tìm thấy file cấu hình tại: ${envConfigFile}"
-            }
-
-            def props = readProperties file: envConfigFile
-            
-            // Áp dụng cấu hình (Dùng toán tử Elvis để set default)
-            env.B_PORT       = props['BACKEND_PORT'] ?: '7070'
-            env.F_PORT       = props['FRONTEND_PORT'] ?: '3000'
-            env.DOCKER_USER  = props['DOCKER_USER'] ?: 'bingsu1103'
-            env.AWS_SSH_KEY  = props['AWS_SSH_KEY_NAME'] ?: 'AWS_key_pair'
-            
-            // Các config khác giữ nguyên logic của bạn...
-            env.SSL_ENABLED  = props['SSL_ENABLED'] ?: 'false'
-            echo "--- Cấu hình hoàn tất cho môi trường: ${env.ENV_TARGET} ---"
         }
     }
 }
