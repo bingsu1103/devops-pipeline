@@ -6,7 +6,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
         
         // ENV_TARGET sẽ được nạp từ application.properties
-        ENV_TARGET = ''
+        ENV_TARGET = 'prod'
         TAG = "build-${env.BUILD_NUMBER}"
     }
 
