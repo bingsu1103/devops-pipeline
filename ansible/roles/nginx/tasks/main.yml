@@ -9,7 +9,7 @@
     name:
       - python3-certbot-nginx
     state: present
-  when: ssl_enabled | default(false)
+  when: ssl_enabled | default(false) | bool
 
 - name: Deploy Nginx Base Config (without SSL)
   template:
@@ -37,11 +37,11 @@
     --email {{ certbot_email | default('admin@example.com') }}
   args:
     creates: "/etc/letsencrypt/live/{{ domain_name }}/fullchain.pem"
-  when: ssl_enabled | default(false)
+  when: ssl_enabled | default(false) | bool
 
 - name: Re-deploy Nginx Config (with SSL)
   template:
     src: app.conf.j2
     dest: /etc/nginx/conf.d/app.conf
-  when: ssl_enabled | default(false)
+  when: ssl_enabled | default(false) | bool
   notify: restart nginx
