@@ -112,7 +112,6 @@ pipeline {
                                 .replace("{{ BACKEND_IP }}", env.BACKEND_IP)
                                 .replace("{{ FRONTEND_IP }}", env.FRONTEND_IP)
                                 .replace("{{ RDS_HOST }}", env.RDS_HOST)
-                                .replace("{{ DB_PASS }}", env.DB_PASS)
                             
                             writeFile(file: "${env.WORKSPACE}/ansible/inventory/${ENV_TARGET}.ini", text: activeInventory)
                         }
@@ -160,7 +159,7 @@ pipeline {
                     sshagent(['ec2-ssh-key']) {
                         dir('ansible') {
                             sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/setup.yml"
-                            sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/deploy.yml --extra-vars 'image_tag=${TAG} docker_user=${DOCKER_USER} backend_port=${B_PORT} frontend_port=${F_PORT}'"
+                            sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/deploy.yml --extra-vars 'image_tag=${TAG} docker_user=${DOCKER_USER} backend_port=${B_PORT} frontend_port=${F_PORT} db_password=${env.DB_PASS}'"
 
                         }
                     }

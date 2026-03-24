@@ -5,7 +5,6 @@ backend_server ansible_host={{ BACKEND_IP }} ansible_user=ec2-user
 db_host={{ RDS_HOST }}
 db_name=devops_db
 db_username=dbadmin
-db_password={{ DB_PASS }}
 
 [frontend]
 frontend_server ansible_host={{ FRONTEND_IP }} ansible_user=ec2-user
