@@ -14,8 +14,8 @@ instance_type = "t4g.small"
 # Database (Production RDS)
 db_engine         = "postgres"
 db_port           = 5432
-allocated_storage = 50
-db_instance_class = "db.t3.medium"
+allocated_storage = 20
+db_instance_class = "db.t3.micro"
 db_name           = "production_inventory_db"
 db_user           = "prod_db_admin"
 
