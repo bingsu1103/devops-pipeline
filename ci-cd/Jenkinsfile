@@ -5,8 +5,8 @@ pipeline {
         PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
         
-        // Mặc định ban đầu để tránh lỗi scope ở block post
-        ENV_TARGET = 'dev'
+        // ENV_TARGET must be provided by application.properties
+        ENV_TARGET = ''
         TAG = "build-${env.BUILD_NUMBER}"
     }
 
@@ -48,13 +48,15 @@ pipeline {
                     ).trim()
                     if (envTargetFromFile) {
                         env.ENV_TARGET = envTargetFromFile
-                        echo "Môi trường mục tiêu: ${env.ENV_TARGET} (Lấy từ application.properties)"
                     } else if (rootProps['ENV_TARGET']) {
                         env.ENV_TARGET = rootProps['ENV_TARGET'].trim()
-                        echo "Môi trường mục tiêu: ${env.ENV_TARGET} (Lấy từ application.properties)"
-                    } else {
-                        echo "Dùng môi trường mặc định: ${env.ENV_TARGET}"
                     }
+
+                    if (!env.ENV_TARGET) {
+                        error "ENV_TARGET is required. Set it in application.properties to 'dev' or 'prod'."
+                    }
+
+                    echo "Môi trường mục tiêu: ${env.ENV_TARGET} (Lấy từ application.properties)"
 
                     // 2. Nạp cấu hình chi tiết từ thư mục môi trường tương ứng
                     def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
