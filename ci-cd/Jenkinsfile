@@ -5,7 +5,7 @@ pipeline {
         PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
         
-        // ENV_TARGET must be provided by application.properties
+        // ENV_TARGET sẽ được nạp từ application.properties
         ENV_TARGET = ''
         TAG = "build-${env.BUILD_NUMBER}"
     }
@@ -18,72 +18,66 @@ pipeline {
         }
 
         stage('Load Configuration') {
-        stage('Load Configuration') {
-        steps {
-            script {
-                echo "--- [Configuration as Code] Bắt đầu nạp cấu hình ---"
+            steps {
+                script {
+                    echo "--- [Configuration as Code] Bắt đầu nạp cấu hình ---"
 
-                // 1. Đọc file application.properties bằng Groovy thuần
-                if (!fileExists('application.properties')) {
-                    error "File application.properties không tồn tại!"
-                }
-
-                def content = readFile('application.properties')
-                def lines = content.split('\n')
-                def config = [:]
-
-                lines.each { line ->
-                    // Loại bỏ BOM, khoảng trắng thừa và bỏ qua dòng comment (#)
-                    def cleanLine = line.replaceAll('\uFEFF', '').trim()
-                    if (cleanLine && !cleanLine.startsWith('#') && cleanLine.contains('=')) {
-                        def parts = cleanLine.split('=', 2)
-                        config[parts[0].trim()] = parts[1].trim()
+                    if (!fileExists('application.properties')) {
+                        error "File application.properties không tồn tại tại thư mục gốc!"
                     }
-                }
 
-                // Gán giá trị và dùng .trim() một lần nữa cho chắc chắn
-                env.ENV_TARGET = config['ENV_TARGET']?.trim()
+                    def content = readFile('application.properties')
+                    def lines = content.split('\n')
+                    def config = [:]
 
-                if (!env.ENV_TARGET) {
-                    echo "Nội dung file đọc được: \n${content}"
-                    error "LỖI: Không tìm thấy ENV_TARGET trong application.properties"
-                }
-
-                echo "Môi trường mục tiêu: ${env.ENV_TARGET}"
-
-                // 2. Nạp cấu hình chi tiết từ folder môi trường
-                def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
-                if (!fileExists(envConfigFile)) {
-                    error "Không tìm thấy file: ${envConfigFile}"
-                }
-
-                def envContent = readFile(envConfigFile)
-                def envLines = envContent.split('\n')
-                def envProps = [:]
-
-                envLines.each { line ->
-                    def cleanLine = line.trim()
-                    if (cleanLine && !cleanLine.startsWith('#') && cleanLine.contains('=')) {
-                        def parts = cleanLine.split('=', 2)
-                        envProps[parts[0].trim()] = parts[1].trim()
+                    lines.each { line ->
+                        def cleanLine = line.replaceAll('\uFEFF', '').trim()
+                        if (cleanLine && !cleanLine.startsWith('#') && cleanLine.contains('=')) {
+                            def parts = cleanLine.split('=', 2)
+                            config[parts[0].trim()] = parts[1].trim()
+                        }
                     }
+
+                    env.ENV_TARGET = config['ENV_TARGET']?.trim()
+
+                    if (!env.ENV_TARGET) {
+                        echo "Nội dung file đọc được: \n${content}"
+                        error "LỖI: Không tìm thấy ENV_TARGET trong application.properties"
+                    }
+
+                    echo "Môi trường mục tiêu: ${env.ENV_TARGET}"
+
+                    def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
+                    if (!fileExists(envConfigFile)) {
+                        error "Không tìm thấy file cấu hình môi trường tại: ${envConfigFile}"
+                    }
+
+                    def envContent = readFile(envConfigFile)
+                    def envLines = envContent.split('\n')
+                    def envProps = [:]
+
+                    envLines.each { line ->
+                        def cleanLine = line.trim()
+                        if (cleanLine && !cleanLine.startsWith('#') && cleanLine.contains('=')) {
+                            def parts = cleanLine.split('=', 2)
+                            envProps[parts[0].trim()] = parts[1].trim()
+                        }
+                    }
+
+                    // Áp dụng các giá trị vào env
+                    env.B_PORT       = envProps['BACKEND_PORT'] ?: '7070'
+                    env.F_PORT       = envProps['FRONTEND_PORT'] ?: '3000'
+                    env.DOCKER_USER  = envProps['DOCKER_USER'] ?: 'bingsu1103'
+                    env.AWS_SSH_KEY  = envProps['AWS_SSH_KEY_NAME'] ?: 'AWS_key_pair'
+                    env.FRONTEND_DOMAIN_NAME = envProps['FRONTEND_DOMAIN_NAME'] ?: (envProps['DOMAIN_NAME'] ?: '')
+                    env.BACKEND_DOMAIN_NAME  = envProps['BACKEND_DOMAIN_NAME'] ?: (envProps['API_DOMAIN_NAME'] ?: '')
+                    env.SSL_ENABLED    = envProps['SSL_ENABLED'] ?: 'false'
+                    env.CERTBOT_EMAIL  = envProps['CERTBOT_EMAIL'] ?: 'admin@example.com'
+
+                    echo "--- Cấu hình hoàn tất cho: ${env.ENV_TARGET} ---"
                 }
-
-                // Áp dụng vào env (Dùng toán tử Elvis để tránh null)
-                env.B_PORT       = envProps['BACKEND_PORT'] ?: '7070'
-                env.F_PORT       = envProps['FRONTEND_PORT'] ?: '3000'
-                env.DOCKER_USER  = envProps['DOCKER_USER'] ?: 'bingsu1103'
-                env.AWS_SSH_KEY  = envProps['AWS_SSH_KEY_NAME'] ?: 'AWS_key_pair'
-                env.FRONTEND_DOMAIN_NAME = envProps['FRONTEND_DOMAIN_NAME'] ?: (envProps['DOMAIN_NAME'] ?: '')
-                env.BACKEND_DOMAIN_NAME  = envProps['BACKEND_DOMAIN_NAME'] ?: (envProps['API_DOMAIN_NAME'] ?: '')
-                env.SSL_ENABLED    = envProps['SSL_ENABLED'] ?: 'false'
-                env.CERTBOT_EMAIL  = envProps['CERTBOT_EMAIL'] ?: 'admin@example.com'
-
-                echo "--- Cấu hình hoàn tất cho: ${env.ENV_TARGET} ---"
             }
-        }
-    }
-}
+        } // Kết thúc stage Load Configuration
 
         stage('Build Artifacts') {
             steps {
@@ -101,12 +95,11 @@ pipeline {
                     string(credentialsId: 'aws-secret-key', variable: 'AWS_SECRET_ACCESS_KEY'),
                     string(credentialsId: 'rds-db-password', variable: 'DB_PASS')
                 ]) {
-                    dir("infrastructure/envs/${ENV_TARGET}") {
+                    dir("infrastructure/envs/${env.ENV_TARGET}") {
                         sh 'terraform init'
-                        sh "terraform apply -var='db_password=\$DB_PASS' -var='backend_port=${B_PORT}' -var='frontend_port=${F_PORT}' -var='ssh_key=${AWS_SSH_KEY}' -auto-approve"
+                        sh "terraform apply -var='db_password=\$DB_PASS' -var='backend_port=${env.B_PORT}' -var='frontend_port=${env.F_PORT}' -var='ssh_key=${env.AWS_SSH_KEY}' -auto-approve"
                         
                         script {
-                            // Extract IP from Terraform Output
                             def backend_ip = sh(script: "terraform output -raw backend_public_ip", returnStdout: true).trim()
                             def frontend_ip = sh(script: "terraform output -raw frontend_public_ip", returnStdout: true).trim()
                             def rds_endpoint_full = sh(script: "terraform output -raw rds_endpoint", returnStdout: true).trim()
@@ -117,19 +110,17 @@ pipeline {
                             env.RDS_HOST = rds_host
 
                             echo "--- Service Access Information ---"
-                            echo "Backend: http://${env.BACKEND_IP}:${B_PORT}"
-                            echo "Frontend: http://${env.FRONTEND_IP}:${F_PORT}"
-                            echo "----------------------------------"
+                            echo "Backend: http://${env.BACKEND_IP}:${env.B_PORT}"
+                            echo "Frontend: http://${env.FRONTEND_IP}:${env.F_PORT}"
 
-                            // Generate Ansible inventory from template
-                            def inventoryTplPath = "${env.WORKSPACE}/ansible/inventory/${ENV_TARGET}.ini.example"
+                            def inventoryTplPath = "${env.WORKSPACE}/ansible/inventory/${env.ENV_TARGET}.ini.example"
                             def inventoryTpl = readFile(inventoryTplPath)
                             def activeInventory = inventoryTpl
                                 .replace("{{ BACKEND_IP }}", env.BACKEND_IP)
                                 .replace("{{ FRONTEND_IP }}", env.FRONTEND_IP)
                                 .replace("{{ RDS_HOST }}", env.RDS_HOST)
                             
-                            writeFile(file: "${env.WORKSPACE}/ansible/inventory/${ENV_TARGET}.ini", text: activeInventory)
+                            writeFile(file: "${env.WORKSPACE}/ansible/inventory/${env.ENV_TARGET}.ini", text: activeInventory)
                         }
                     }
                 }
@@ -139,21 +130,19 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script {
-                    // Tạo thư mục config tạm để tránh lỗi docker-credential-desktop trên Mac
                     sh "mkdir -p .docker_config && echo '{}' > .docker_config/config.json"
                     sh "chmod +x ci-cd/scripts/*.sh"
                     
-                    // Tính toán API URL dựa trên Domain (Nếu có)
                     def protocol = (env.SSL_ENABLED == 'true') ? 'https' : 'http'
-                    def api_url = (env.BACKEND_DOMAIN_NAME != '') ? "${protocol}://${env.BACKEND_DOMAIN_NAME}" : "http://${env.BACKEND_IP}:${B_PORT}"
+                    def api_url = (env.BACKEND_DOMAIN_NAME != '') ? "${protocol}://${env.BACKEND_DOMAIN_NAME}" : "http://${env.BACKEND_IP}:${env.B_PORT}"
                     env.NEXT_PUBLIC_API_URL = api_url
                     
                     withEnv([
                         "DOCKER_CONFIG=${env.WORKSPACE}/.docker_config",
                         "NEXT_PUBLIC_API_URL=${env.NEXT_PUBLIC_API_URL}",
-                        "DOCKERHUB_USER=${DOCKER_USER}"
+                        "DOCKERHUB_USER=${env.DOCKER_USER}"
                     ]) {
-                        sh "./ci-cd/scripts/build.sh ${TAG}"
+                        sh "./ci-cd/scripts/build.sh ${env.TAG}"
                     }
                 }
             }
@@ -162,12 +151,11 @@ pipeline {
         stage('Push DockerHub') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    withCredentials([usernamePassword(credentialsId: "${env.DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                         withEnv(["DOCKER_CONFIG=${env.WORKSPACE}/.docker_config"]) {
-                            // Clear proxies for docker login to bypass 'HTTP response to HTTPS client' error if proxy is misconfigured/intercepting
                             sh 'HTTP_PROXY="" HTTPS_PROXY="" docker login -u $USER -p $PASS'
                             withEnv(["DOCKERHUB_USER=${env.DOCKER_USER}"]) {
-                                sh "HTTP_PROXY='' HTTPS_PROXY='' ./ci-cd/scripts/push.sh ${TAG}"
+                                sh "HTTP_PROXY='' HTTPS_PROXY='' ./ci-cd/scripts/push.sh ${env.TAG}"
                             }
                         }
                     }
@@ -181,12 +169,12 @@ pipeline {
                     withCredentials([string(credentialsId: 'rds-db-password', variable: 'DB_PASS')]) {
                         script {
                             dir('ansible') {
-                                sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/setup.yml"
+                                sh "ansible-playbook -i inventory/${env.ENV_TARGET}.ini playbooks/setup.yml"
 
-                                def extraVars = "image_tag=${TAG} " +
-                                               "docker_user=${DOCKER_USER} " +
-                                               "b_port=${B_PORT} " +
-                                               "f_port=${F_PORT} " +
+                                def extraVars = "image_tag=${env.TAG} " +
+                                               "docker_user=${env.DOCKER_USER} " +
+                                               "b_port=${env.B_PORT} " +
+                                               "f_port=${env.F_PORT} " +
                                                "db_password=\$DB_PASS " +
                                                "frontend_domain_name=${env.FRONTEND_DOMAIN_NAME} " +
                                                "backend_domain_name=${env.BACKEND_DOMAIN_NAME} " +
@@ -195,14 +183,14 @@ pipeline {
                                                "backend_host=${env.BACKEND_IP} " +
                                                "next_public_api_url=${env.NEXT_PUBLIC_API_URL}"
 
-                                sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/deploy.yml --extra-vars '${extraVars}'"
+                                sh "ansible-playbook -i inventory/${env.ENV_TARGET}.ini playbooks/deploy.yml --extra-vars '${extraVars}'"
                             }
                         }
                     }
                 }
             }
         }
-    }
+    } // Kết thúc stages
 
     post {
         always {
@@ -213,4 +201,3 @@ pipeline {
         }
     }
 }
-
