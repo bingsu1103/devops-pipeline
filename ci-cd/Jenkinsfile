@@ -42,8 +42,15 @@ pipeline {
 
                     // 1. Xác định môi trường mục tiêu (ENV_TARGET) từ file gốc
                     def rootProps = parseProps('application.properties')
-                    if (rootProps['ENV_TARGET']) {
-                        env.ENV_TARGET = rootProps['ENV_TARGET']
+                    def envTargetFromFile = sh(
+                        script: "grep -E '^ENV_TARGET=' application.properties | tail -n 1 | cut -d= -f2 | tr -d '\\r'",
+                        returnStdout: true
+                    ).trim()
+                    if (envTargetFromFile) {
+                        env.ENV_TARGET = envTargetFromFile
+                        echo "Môi trường mục tiêu: ${env.ENV_TARGET} (Lấy từ application.properties)"
+                    } else if (rootProps['ENV_TARGET']) {
+                        env.ENV_TARGET = rootProps['ENV_TARGET'].trim()
                         echo "Môi trường mục tiêu: ${env.ENV_TARGET} (Lấy từ application.properties)"
                     } else {
                         echo "Dùng môi trường mặc định: ${env.ENV_TARGET}"
