@@ -1,8 +1,9 @@
 {% set render_ssl = render_ssl | default(ssl_enabled | default(false) | bool) %}
+{% set effective_domain = (domain_name | default('') | trim) if (domain_name | default('') | trim) else 'localhost' %}
 {% if render_ssl %}
 server {
     listen 80;
-    server_name {{ domain_name | default('localhost') }};
+    server_name {{ effective_domain }};
 
     location / {
         return 301 https://$host$request_uri;
@@ -11,7 +12,7 @@ server {
 
 server {
     listen 443 ssl;
-    server_name {{ domain_name | default('localhost') }};
+    server_name {{ effective_domain }};
 
     ssl_certificate /etc/letsencrypt/live/{{ domain_name }}/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/{{ domain_name }}/privkey.pem;
@@ -49,7 +50,7 @@ server {
 {% else %}
 server {
     listen 80;
-    server_name {{ domain_name | default('localhost') }};
+    server_name {{ effective_domain }};
 
     {% if proxy_mode | default('frontend') == 'backend' %}
     location / {
