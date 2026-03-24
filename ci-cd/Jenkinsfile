@@ -25,8 +25,24 @@ pipeline {
                     sh "git rev-parse HEAD"
                     sh "cat application.properties"
 
+                    def parseProps = { filePath ->
+                        def result = [:]
+                        if (!fileExists(filePath)) {
+                            return result
+                        }
+
+                        readFile(filePath).readLines().each { rawLine ->
+                            def line = rawLine.replace('\uFEFF', '').trim()
+                            if (line && !line.startsWith('#') && line.contains('=')) {
+                                def parts = line.split('=', 2)
+                                result[parts[0].trim()] = parts[1].trim()
+                            }
+                        }
+                        return result
+                    }
+
                     // 1. Xác định môi trường mục tiêu (ENV_TARGET) từ file gốc
-                    def rootProps = readProperties(file: 'application.properties')
+                    def rootProps = parseProps('application.properties')
                     env.ENV_TARGET = (rootProps['ENV_TARGET'] ?: rootProps['\uFEFFENV_TARGET'] ?: '').toString().trim()
 
                     if (!env.ENV_TARGET) {
@@ -37,7 +53,7 @@ pipeline {
 
                     // 2. Nạp cấu hình chi tiết từ thư mục môi trường tương ứng
                     def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
-                    def props = readProperties(file: envConfigFile)
+                    def props = parseProps(envConfigFile)
                     
                     if (props.size() > 0) {
                         // Áp dụng cấu hình vào environment
