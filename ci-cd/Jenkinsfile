@@ -18,69 +18,49 @@ pipeline {
         }
 
         stage('Load Configuration') {
-            steps {
-                script {
-                    echo "--- [Configuration as Code] Bắt đầu nạp cấu hình ---"
-
-                    sh "git rev-parse HEAD"
-                    sh "cat application.properties"
-
-                    def parseProps = { filePath ->
-                        def result = [:]
-                        if (!fileExists(filePath)) {
-                            return result
-                        }
-
-                        readFile(filePath).readLines().each { rawLine ->
-                            def line = rawLine.replace('\uFEFF', '').trim()
-                            if (line && !line.startsWith('#') && line.contains('=')) {
-                                def parts = line.split('=', 2)
-                                result[parts[0].trim()] = parts[1].trim()
-                            }
-                        }
-                        return result
-                    }
-
-                    // 1. Xác định môi trường mục tiêu (ENV_TARGET) từ file gốc
-                    def rootProps = parseProps('application.properties')
-                    env.ENV_TARGET = (rootProps['ENV_TARGET'] ?: rootProps['\uFEFFENV_TARGET'] ?: '').toString().trim()
-
-                    if (!env.ENV_TARGET) {
-                        error "ENV_TARGET is required. Set it in application.properties to 'dev' or 'prod'."
-                    }
-
-                    echo "Môi trường mục tiêu: ${env.ENV_TARGET} (Lấy từ application.properties)"
-
-                    // 2. Nạp cấu hình chi tiết từ thư mục môi trường tương ứng
-                    def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
-                    def props = parseProps(envConfigFile)
-                    
-                    if (props.size() > 0) {
-                        // Áp dụng cấu hình vào environment
-                        env.B_PORT       = props['BACKEND_PORT'] ?: '7070'
-                        env.F_PORT       = props['FRONTEND_PORT'] ?: '3000'
-                        env.DOCKER_USER  = props['DOCKER_USER'] ?: 'bingsu1103'
-                        env.AWS_SSH_KEY  = props['AWS_SSH_KEY_NAME'] ?: 'AWS_key_pair'
-                        
-                        // Domain & SSL config (frontend/backend can be different)
-                        env.FRONTEND_DOMAIN_NAME = props['FRONTEND_DOMAIN_NAME'] ?: (props['DOMAIN_NAME'] ?: '')
-                        env.BACKEND_DOMAIN_NAME  = props['BACKEND_DOMAIN_NAME'] ?: (props['API_DOMAIN_NAME'] ?: '')
-                        env.SSL_ENABLED    = props['SSL_ENABLED'] ?: 'false'
-                        env.CERTBOT_EMAIL  = props['CERTBOT_EMAIL'] ?: 'admin@example.com'
-                        
-                        echo "--- Cấu hình hoàn tất cho môi trường: ${env.ENV_TARGET} ---"
-                        echo "  + Backend Port: ${env.B_PORT}"
-                        echo "  + Frontend Port: ${env.F_PORT}"
-                        echo "  + Docker User : ${env.DOCKER_USER}"
-                        echo "  + fe domain   : ${env.FRONTEND_DOMAIN_NAME}"
-                        echo "  + be domain   : ${env.BACKEND_DOMAIN_NAME}"
-                        echo "  + SSL         : ${env.SSL_ENABLED}"
-                    } else {
-                        error "Không tìm thấy hoặc file cấu hình rỗng tại ${envConfigFile}!"
-                    }
-                }
+    steps {
+        script {
+            echo "--- [Configuration as Code] Bắt đầu nạp cấu hình ---"
+            
+            // Kiểm tra file tồn tại trước khi đọc
+            if (!fileExists('application.properties')) {
+                error "Không tìm thấy file application.properties tại thư mục gốc!"
             }
+
+            // Sử dụng readProperties thay vì tự parse thủ công
+            def rootProps = readProperties file: 'application.properties'
+            
+            // Lấy ENV_TARGET, trim triệt để các ký tự xuống dòng \r hoặc \n
+            env.ENV_TARGET = rootProps['ENV_TARGET']?.trim()
+
+            if (!env.ENV_TARGET) {
+                // Debug: In ra toàn bộ key để xem Jenkins thực sự đọc được gì
+                echo "Nội dung đọc được: ${rootProps}"
+                error "ENV_TARGET is required. Set it in application.properties to 'dev' or 'prod'."
+            }
+
+            echo "Môi trường mục tiêu: ${env.ENV_TARGET}"
+
+            // Nạp cấu hình chi tiết
+            def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
+            if (!fileExists(envConfigFile)) {
+                error "Không tìm thấy file cấu hình tại: ${envConfigFile}"
+            }
+
+            def props = readProperties file: envConfigFile
+            
+            // Áp dụng cấu hình (Dùng toán tử Elvis để set default)
+            env.B_PORT       = props['BACKEND_PORT'] ?: '7070'
+            env.F_PORT       = props['FRONTEND_PORT'] ?: '3000'
+            env.DOCKER_USER  = props['DOCKER_USER'] ?: 'bingsu1103'
+            env.AWS_SSH_KEY  = props['AWS_SSH_KEY_NAME'] ?: 'AWS_key_pair'
+            
+            // Các config khác giữ nguyên logic của bạn...
+            env.SSL_ENABLED  = props['SSL_ENABLED'] ?: 'false'
+            echo "--- Cấu hình hoàn tất cho môi trường: ${env.ENV_TARGET} ---"
         }
+    }
+}
 
         stage('Build Artifacts') {
             steps {
