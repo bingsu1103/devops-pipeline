@@ -5,7 +5,8 @@ pipeline {
         PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
         
-        // Các biến cấu hình dưới đây sẽ được gán giá trị động trong stage 'Load Configuration'
+        // Mặc định ban đầu để tránh lỗi scope ở block post
+        ENV_TARGET = 'dev'
         TAG = "build-${env.BUILD_NUMBER}"
     }
 
@@ -24,24 +25,28 @@ pipeline {
                     // 1. Xác định môi trường mục tiêu (ENV_TARGET) từ file gốc
                     def rootConfigFile = 'application.properties'
                     if (fileExists(rootConfigFile)) {
-                        def rootProps = readProperties file: rootConfigFile
-                        env.ENV_TARGET = rootProps['ENV_TARGET'] ?: 'dev'
+                        def propsText = readFile(rootConfigFile)
+                        def props = new Properties()
+                        props.load(new StringReader(propsText))
+                        
+                        env.ENV_TARGET = props.getProperty('ENV_TARGET', 'dev')
                         echo "Môi trường mục tiêu: ${env.ENV_TARGET} (Lấy từ ${rootConfigFile})"
                     } else {
-                        env.ENV_TARGET = 'dev'
                         echo "Không tìm thấy file ${rootConfigFile}, mặc định dùng: ${env.ENV_TARGET}"
                     }
 
                     // 2. Nạp cấu hình chi tiết từ thư mục môi trường cụ thể
                     def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
                     if (fileExists(envConfigFile)) {
-                        def props = readProperties file: envConfigFile
+                        def propsText = readFile(envConfigFile)
+                        def props = new Properties()
+                        props.load(new StringReader(propsText))
                         
                         // Áp dụng cấu hình từ file properties vào environment của Jenkins
-                        env.B_PORT       = props['BACKEND_PORT'] ?: '7070'
-                        env.F_PORT       = props['FRONTEND_PORT'] ?: '3000'
-                        env.DOCKER_USER  = props['DOCKER_USER'] ?: 'bingsu1103'
-                        env.AWS_SSH_KEY  = props['AWS_SSH_KEY_NAME'] ?: 'AWS_key_pair'
+                        env.B_PORT       = props.getProperty('BACKEND_PORT', '7070')
+                        env.F_PORT       = props.getProperty('FRONTEND_PORT', '3000')
+                        env.DOCKER_USER  = props.getProperty('DOCKER_USER', 'bingsu1103')
+                        env.AWS_SSH_KEY  = props.getProperty('AWS_SSH_KEY_NAME', 'AWS_key_pair')
                         
                         echo "--- Cấu hình hoàn tất cho môi trường: ${env.ENV_TARGET} ---"
                         echo "  + Backend Port: ${env.B_PORT}"
