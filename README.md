@@ -60,30 +60,32 @@ Add these in `Manage Jenkins` -> `Credentials` -> `System` -> `Global credential
 | `aws-secret-key`  | Secret text                   | AWS Secret Access Key for Terraform provisioning. |
 | `ec2-ssh-key`     | SSH Username with private key | Key for `ec2-user` to allow Ansible connectivity. |
 
-### 2. Jenkins Pipeline Parameters
+### 2. Configuration as Code (CasC)
 
-When running the pipeline, provide these parameters:
+This project uses a file-based configuration strategy. You don't need to set parameters in the Jenkins UI.
 
-- `ENVIRONMENT`: `dev` or `prod`.
-- `BACKEND_PORT`: Port for Backend (e.g., `7070`).
-- `FRONTEND_PORT`: Port for Frontend (e.g., `3000`).
-- `DOCKERHUB_USER_PARAM`: Your Docker Hub Username.
+#### A. Master Configuration (`./application.properties`)
 
-### 3. Global Environment Variables
+This file at the root of the project acts as the **Master Switch**.
 
-Define these in Jenkins (**Manage Jenkins** -> **System** -> **Global properties** -> **Environment variables**):
+- `ENV_TARGET`: Set this to `dev` or `prod` to tell Jenkins where to deploy.
 
-- **`DOCKERHUB_USER`**: Your Docker Hub username (e.g., `bingsu1103`). Setting this allows the pipeline to run automatically on every push without manually entering parameters.
+#### B. Environment-Specific Config (`./infrastructure/envs/[dev|prod]/pipeline.properties`)
 
-### 4. Pipeline Automation (CI/CD)
+These files contain the technical details for each environment:
 
-The pipeline is now fully automated. It will use the following default values if triggered by a code push:
+- `BACKEND_PORT`: Port for the Spring Boot service.
+- `FRONTEND_PORT`: Port for the Next.js application.
+- `DOCKER_USER`: Your Docker Hub username.
+- `AWS_SSH_KEY_NAME`: The name of the SSH key registered in AWS.
 
-- **Backend Port**: `7070`
-- **Frontend Port**: `3000`
-- **Environment**: `dev`
+### 3. Pipeline Automation (CI/CD)
 
-If you need to change these values for a specific deployment, use the **"Build with Parameters"** option.
+The pipeline is fully automated and follows the **Configuration as Code** principle.
+
+1. **Change Environment**: To switch between Dev and Prod, simply change `ENV_TARGET` in the root `application.properties` and commit/push.
+2. **Technical Settings**: To change ports or users, edit the corresponding file in `infrastructure/envs/` and commit/push.
+3. **Automatic Load**: Jenkins will automatically detect these changes, load the correct configuration, and execute the deployment without manual intervention.
 
 ### 5. Pipeline Requirements
 
