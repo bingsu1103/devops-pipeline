@@ -87,7 +87,7 @@ pipeline {
                 ]) {
                     dir("infrastructure/envs/${ENV_TARGET}") {
                         sh 'terraform init'
-                        sh "terraform apply -var='db_password=${env.DB_PASS}' -var='backend_port=${B_PORT}' -var='frontend_port=${F_PORT}' -var='ssh_key=${AWS_SSH_KEY}' -auto-approve"
+                        sh "terraform apply -var='db_password=\$DB_PASS' -var='backend_port=${B_PORT}' -var='frontend_port=${F_PORT}' -var='ssh_key=${AWS_SSH_KEY}' -auto-approve"
                         
                         script {
                             // Extract IP from Terraform Output
@@ -144,7 +144,7 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'USER', passwordVariable: 'PASS')]) {
                         withEnv(["DOCKER_CONFIG=${env.WORKSPACE}/.docker_config"]) {
                             // Clear proxies for docker login to bypass 'HTTP response to HTTPS client' error if proxy is misconfigured/intercepting
-                            sh "HTTP_PROXY='' HTTPS_PROXY='' docker login -u ${USER} -p ${PASS}"
+                            sh 'HTTP_PROXY="" HTTPS_PROXY="" docker login -u $USER -p $PASS'
                             withEnv(["DOCKERHUB_USER=${env.DOCKER_USER}"]) {
                                 sh "HTTP_PROXY='' HTTPS_PROXY='' ./ci-cd/scripts/push.sh ${TAG}"
                             }
@@ -156,13 +156,14 @@ pipeline {
 
         stage('Configuration & Deploy') {
             steps {
-                    sshagent(['ec2-ssh-key']) {
+                sshagent(['ec2-ssh-key']) {
+                    withCredentials([string(credentialsId: 'rds-db-password', variable: 'DB_PASS')]) {
                         dir('ansible') {
                             sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/setup.yml"
-                            sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/deploy.yml --extra-vars 'image_tag=${TAG} docker_user=${DOCKER_USER} backend_port=${B_PORT} frontend_port=${F_PORT} db_password=${env.DB_PASS}'"
-
+                            sh "ansible-playbook -i inventory/${ENV_TARGET}.ini playbooks/deploy.yml --extra-vars \"image_tag=${TAG} docker_user=${DOCKER_USER} backend_port=${B_PORT} frontend_port=${F_PORT} db_password=\$DB_PASS\""
                         }
                     }
+                }
             }
         }
     }
