@@ -1,45 +1,57 @@
 pipeline {
     agent any
 
-    parameters {
-        choice(name: 'ENVIRONMENT', choices: ['dev', 'prod'], description: 'Select the environment to deploy')
-        string(name: 'BACKEND_PORT', defaultValue: '7070', description: 'Port for the Backend service')
-        string(name: 'FRONTEND_PORT', defaultValue: '3000', description: 'Port for the Frontend service')
-        string(name: 'AWS_SSH_KEY_NAME', defaultValue: 'AWS_key_pair', description: 'The Name of the Key Pair on AWS Console')
-
-        string(name: 'DOCKERHUB_USER_PARAM', defaultValue: '', description: 'Docker Hub Username (Optional - falls back to global DOCKERHUB_USER)')
-    }
-
-
     environment {
         PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
         
-        // --- AUTO DEFAULTS: Priority (Parameter > Global Env > Default) ---
-        ENV_TARGET = (params.ENVIRONMENT ?: 'dev')
-        B_PORT = (params.BACKEND_PORT ?: '7070')
-        F_PORT = (params.FRONTEND_PORT ?: '3000')
-        AWS_SSH_KEY = (params.AWS_SSH_KEY_NAME ?: 'AWS_key_pair')
-        
-        // Use Global Variable DOCKERHUB_USER if parameter is empty
-        DOCKER_USER = (params.DOCKERHUB_USER_PARAM && params.DOCKERHUB_USER_PARAM != "") ? params.DOCKERHUB_USER_PARAM : (env.DOCKERHUB_USER ?: 'bingsu1103')
-        
+        // Các biến cấu hình dưới đây sẽ được gán giá trị động trong stage 'Load Configuration'
         TAG = "build-${env.BUILD_NUMBER}"
     }
 
     stages {
-        stage('Validate Parameters') {
-            steps {
-                script {
-                    echo "--- Starting Pipeline: Env: ${ENV_TARGET}, Backend Port: ${B_PORT}, Frontend Port: ${F_PORT} ---"
-
-                }
-            }
-        }
-
         stage('Checkout Code') {
             steps {
                 checkout scm
+            }
+        }
+
+        stage('Load Configuration') {
+            steps {
+                script {
+                    echo "--- [Configuration as Code] Bắt đầu nạp cấu hình ---"
+                    
+                    // 1. Xác định môi trường mục tiêu (ENV_TARGET) từ file gốc
+                    def rootConfigFile = 'application.properties'
+                    if (fileExists(rootConfigFile)) {
+                        def rootProps = readProperties file: rootConfigFile
+                        env.ENV_TARGET = rootProps['ENV_TARGET'] ?: 'dev'
+                        echo "Môi trường mục tiêu: ${env.ENV_TARGET} (Lấy từ ${rootConfigFile})"
+                    } else {
+                        env.ENV_TARGET = 'dev'
+                        echo "Không tìm thấy file ${rootConfigFile}, mặc định dùng: ${env.ENV_TARGET}"
+                    }
+
+                    // 2. Nạp cấu hình chi tiết từ thư mục môi trường cụ thể
+                    def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
+                    if (fileExists(envConfigFile)) {
+                        def props = readProperties file: envConfigFile
+                        
+                        // Áp dụng cấu hình từ file properties vào environment của Jenkins
+                        env.B_PORT       = props['BACKEND_PORT'] ?: '7070'
+                        env.F_PORT       = props['FRONTEND_PORT'] ?: '3000'
+                        env.DOCKER_USER  = props['DOCKER_USER'] ?: 'bingsu1103'
+                        env.AWS_SSH_KEY  = props['AWS_SSH_KEY_NAME'] ?: 'AWS_key_pair'
+                        
+                        echo "--- Cấu hình hoàn tất cho môi trường: ${env.ENV_TARGET} ---"
+                        echo "  + Backend Port: ${env.B_PORT}"
+                        echo "  + Frontend Port: ${env.F_PORT}"
+                        echo "  + Docker User : ${env.DOCKER_USER}"
+                        echo "  + AWS SSH Key : ${env.AWS_SSH_KEY}"
+                    } else {
+                        error "Không tìm thấy file cấu hình tại ${envConfigFile}. Kiểm tra lại thư mục infrastructure!"
+                    }
+                }
             }
         }
 
