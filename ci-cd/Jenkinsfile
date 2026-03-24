@@ -26,10 +26,8 @@ pipeline {
                     sh "cat application.properties"
 
                     // 1. Xác định môi trường mục tiêu (ENV_TARGET) từ file gốc
-                    env.ENV_TARGET = sh(
-                        script: "awk -F= '/^ENV_TARGET=/{print \$2}' application.properties | tail -n 1 | tr -d '\\r' | xargs",
-                        returnStdout: true
-                    ).trim()
+                    def rootProps = readProperties(file: 'application.properties')
+                    env.ENV_TARGET = (rootProps['ENV_TARGET'] ?: rootProps['\uFEFFENV_TARGET'] ?: '').toString().trim()
 
                     if (!env.ENV_TARGET) {
                         error "ENV_TARGET is required. Set it in application.properties to 'dev' or 'prod'."
