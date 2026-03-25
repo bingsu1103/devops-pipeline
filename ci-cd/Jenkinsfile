@@ -2,11 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // Cấu hình PATH để Jenkins có thể tìm thấy các công cụ trên Mac/Linux
         PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
-        
-        // ENV_TARGET KHÔNG còn bị hardcode ở đây nữa, giá trị sẽ được inject từ stage 'Load Configuration'
         TAG = "build-${env.BUILD_NUMBER}"
     }
 
@@ -22,12 +19,10 @@ pipeline {
                 script {
                     echo "--- Loading Configuration for ${env.ENV_TARGET ?: 'target'} ---"
 
-                    // 1. Kiểm tra tồn tại file application.properties ở thư mục gốc
                     if (!fileExists('application.properties')) {
-                        error "LỖI: Không tìm thấy file application.properties ở thư mục dự án!"
+                        error "ERROR: application.properties not found in project directory!"
                     }
 
-                    // 2. Đọc ENV_TARGET từ application.properties
                     def rootContent = readFile('application.properties')
                     def rootProps = [:]
                     rootContent.split('\n').each { line ->
@@ -40,13 +35,10 @@ pipeline {
 
                     env.ENV_TARGET = rootProps['ENV_TARGET'] ?: 'dev'
 
-                    // 3. Tìm file cấu hình cụ thể cho môi trường (dev/prod)
                     def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
                     if (!fileExists(envConfigFile)) {
-                        error "LỖI: Không tìm thấy file cấu hình môi trường tại: ${envConfigFile}"
+                        error "ERROR: Environment configuration file not found at: ${envConfigFile}"
                     }
-
-                    // 4. Đọc các biến từ file môi trường cụ thể
                     def envContent = readFile(envConfigFile)
                     def envProps = [:]
                     envContent.split('\n').each { line ->
@@ -57,7 +49,6 @@ pipeline {
                         }
                     }
 
-                    // 5. Inject các biến vào 'env' để sử dụng toàn hệ thống
                     env.B_PORT       = envProps['BACKEND_PORT'] ?: '7070'
                     env.F_PORT       = envProps['FRONTEND_PORT'] ?: '3000'
                     env.DOCKER_USER  = envProps['DOCKER_USER'] ?: 'bingsu1103'
@@ -70,7 +61,7 @@ pipeline {
                     echo "Configuration loaded successfully."
                 }
             }
-        } // Kết thúc stage Load Configuration
+        }
 
         stage('Build Artifacts') {
             steps {
@@ -181,7 +172,7 @@ pipeline {
                 }
             }
         }
-    } // Kết thúc stages
+    }
 
     post {
         success {
