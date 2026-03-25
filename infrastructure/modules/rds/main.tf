@@ -20,7 +20,7 @@ resource "aws_security_group" "db_sg" {
     from_port   = var.db_port
     to_port     = var.db_port
     protocol    = "tcp"
-    cidr_blocks = ["10.0.0.0/8"]
+    cidr_blocks = ["172.16.0.0/16"]
   }
 }
 resource "aws_db_subnet_group" "rds_subnet_group" {
