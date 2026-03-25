@@ -146,21 +146,6 @@ Refer to the example configuration below:
 
 ---
 
-### 8. <img src="https://skillicons.dev/icons?i=terraform" width="30" align="center" /> Infrastructure Termination
-
-To avoid AWS costs when the testing is complete:
-
-1. Open a terminal in the environment folder:
-   ```bash
-   cd infrastructure/envs/dev  # or prod
-   ```
-2. Execute the destruction command:
-   ```bash
-   terraform destroy -auto-approve
-   ```
-
----
-
 ---
 
 <div align="center">
