@@ -206,6 +206,13 @@ Upon successful completion, the system will output the newly provisioned **Front
 ---
 
 <div align="center">
+  <img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExamk0MnU3bzNtcjZxZ3dyM3hrYWthc3FqOWdqaThjYWVyNGZtNmNyciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/s0kOCrGnVHoGAelRB2/giphy.gif" width="300" height="250"/>
+  <p><i>Building great things, one cup of coffee at a time. ☕</i></p>
+</div>
+
+---
+
+<div align="center">
   <img src="./public/author/author.jpg" width="300" />
   <p><b>Crafted with ❤️ by Bingsu (Gia An)</b></p>
 </div>
