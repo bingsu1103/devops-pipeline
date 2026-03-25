@@ -56,6 +56,15 @@ Navigate to `Manage Jenkins` -> `System` -> **Global properties**:
     - Apple Silicon Mac: `/opt/homebrew/bin`
     - Linux / Intel Mac: `/usr/local/bin`
 
+> [!TIP]
+> This variable allows Jenkins to locate CLI tools like **`terraform`**, **`ansible`**, **`aws`**, and **`docker`**.
+>
+> - **Custom Paths**: If your binaries are in non-standard locations (e.g., Docker Desktop on Mac), you can **append** multiple paths using a colon (`:`).
+> - **Example**: `/opt/homebrew/bin:/Applications/Docker.app/Contents/Resources/bin`
+
+> [!IMPORTANT]
+> **Docker Daemon**: Ensure that **Docker Desktop** (or the Docker daemon) is running on the machine hosting Jenkins before starting the pipeline. The build and push stages will fail if Jenkins cannot connect to the Docker engine.
+
 ---
 
 ### 2. <img src="https://skillicons.dev/icons?i=aws" width="30" align="center" /> AWS Key Pair Matching
