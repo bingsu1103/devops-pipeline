@@ -41,7 +41,7 @@ Navigate to `Manage Jenkins` -> `Credentials` -> `System` -> `Global credentials
 | :---------------- | :---------------------------- | :-------------------------------------------------- |
 | `aws-access-key`  | Secret text                   | Your AWS IAM Access Key ID                          |
 | `aws-secret-key`  | Secret text                   | Your AWS IAM Secret Access Key                      |
-| `dockerhub-creds` | Username/Password             | Docker Hub credentials for image registry           |
+| `dockerhub-creds` | Username/Password             | Docker Hub credentials (Password or Access Token)   |
 | `rds-db-password` | Secret text                   | Password for the AWS RDS instance                   |
 | `ec2-ssh-key`     | SSH Username with private key | **User**: `ec2-user`, **Key**: Paste `.pem` content |
 
