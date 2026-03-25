@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
+        // Cấu hình PATH để Jenkins có thể tìm thấy các công cụ trên Mac/Linux
         PATH = "/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
         
-        // ENV_TARGET sẽ được nạp từ application.properties
-        ENV_TARGET = 'prod'
+        // ENV_TARGET KHÔNG còn bị hardcode ở đây nữa, giá trị sẽ được inject từ stage 'Load Configuration'
         TAG = "build-${env.BUILD_NUMBER}"
     }
 
@@ -20,43 +20,37 @@ pipeline {
         stage('Load Configuration') {
             steps {
                 script {
-                    echo "--- [Configuration as Code] Bắt đầu nạp cấu hình ---"
+                    echo "--- [Configuration as Code] Starting to load configuration ---"
 
+                    // 1. Kiểm tra tồn tại file application.properties ở thư mục gốc
                     if (!fileExists('application.properties')) {
-                        error "File application.properties không tồn tại tại thư mục gốc!"
+                        error "LỖI: Không tìm thấy file application.properties ở thư mục dự án!"
                     }
 
-                    def content = readFile('application.properties')
-                    def lines = content.split('\n')
-                    def config = [:]
-
-                    lines.each { line ->
+                    // 2. Đọc ENV_TARGET từ application.properties
+                    def rootContent = readFile('application.properties')
+                    def rootProps = [:]
+                    rootContent.split('\n').each { line ->
                         def cleanLine = line.replaceAll('\uFEFF', '').trim()
                         if (cleanLine && !cleanLine.startsWith('#') && cleanLine.contains('=')) {
                             def parts = cleanLine.split('=', 2)
-                            config[parts[0].trim()] = parts[1].trim()
+                            rootProps[parts[0].trim()] = parts[1].trim()
                         }
                     }
 
-                    env.ENV_TARGET = config['ENV_TARGET']?.trim()
+                    env.ENV_TARGET = rootProps['ENV_TARGET'] ?: 'dev'
+                    echo "--- Môi trường mục tiêu được xác định: ${env.ENV_TARGET} ---"
 
-                    if (!env.ENV_TARGET) {
-                        echo "Nội dung file đọc được: \n${content}"
-                        error "LỖI: Không tìm thấy ENV_TARGET trong application.properties"
-                    }
-
-                    echo "Môi trường mục tiêu: ${env.ENV_TARGET}"
-
+                    // 3. Tìm file cấu hình cụ thể cho môi trường (dev/prod)
                     def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
                     if (!fileExists(envConfigFile)) {
-                        error "Không tìm thấy file cấu hình môi trường tại: ${envConfigFile}"
+                        error "LỖI: Không tìm thấy file cấu hình môi trường tại: ${envConfigFile}"
                     }
 
+                    // 4. Đọc các biến từ file môi trường cụ thể
                     def envContent = readFile(envConfigFile)
-                    def envLines = envContent.split('\n')
                     def envProps = [:]
-
-                    envLines.each { line ->
+                    envContent.split('\n').each { line ->
                         def cleanLine = line.trim()
                         if (cleanLine && !cleanLine.startsWith('#') && cleanLine.contains('=')) {
                             def parts = cleanLine.split('=', 2)
@@ -64,7 +58,7 @@ pipeline {
                         }
                     }
 
-                    // Áp dụng các giá trị vào env
+                    // 5. Inject các biến vào 'env' để sử dụng toàn hệ thống
                     env.B_PORT       = envProps['BACKEND_PORT'] ?: '7070'
                     env.F_PORT       = envProps['FRONTEND_PORT'] ?: '3000'
                     env.DOCKER_USER  = envProps['DOCKER_USER'] ?: 'bingsu1103'
@@ -74,7 +68,7 @@ pipeline {
                     env.SSL_ENABLED    = envProps['SSL_ENABLED'] ?: 'false'
                     env.CERTBOT_EMAIL  = envProps['CERTBOT_EMAIL'] ?: 'admin@example.com'
 
-                    echo "--- Cấu hình hoàn tất cho: ${env.ENV_TARGET} ---"
+                    echo "--- Cấu hình hoàn tất cho môi trường: ${env.ENV_TARGET} ---"
                 }
             }
         } // Kết thúc stage Load Configuration
