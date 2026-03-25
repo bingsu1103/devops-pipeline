@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./frontend/public/header.svg" width="800" />
+  <img src="./frontend/public/header.svg" width="400" />
 </div>
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
@@ -87,25 +87,28 @@ This project uses **Configuration as Code**. Avoid manual parameter entry in the
 
 ### 4. <img src="https://skillicons.dev/icons?i=bash" width="30" align="center" /> Local Development (Optional)
 
-To run the project locally without Jenkins:
+To run the project locally on your machine, use the following commands:
 
-- **Backend**: `cd backend && ./mvnw spring-boot:run`
-- **Frontend**:
-  1. `cd frontend && npm install`
-  2. Create `.env.local` with `NEXT_PUBLIC_API_URL=http://localhost:7070`
-  3. `npm run dev`
+**🚀 Run Backend (API)**
+
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+
+**🌐 Run Frontend (Web)**
+
+```bash
+cd frontend
+npm install
+# Set local API URL
+echo "NEXT_PUBLIC_API_URL=http://localhost:7070" > .env.local
+npm run dev
+```
 
 ---
 
-### 5. <img src="https://skillicons.dev/icons?i=docker" width="30" align="center" /> Execution & Monitoring
-
-1. **Deploy**: Simply `git commit` and `git push` your code to the linked repository.
-2. **Monitor**: Open your Jenkins Job and watch the **Console Output**.
-3. **Audit**: Upon success, Jenkins will print the Frontend and Backend URLs at the end of the log.
-
----
-
-### 6. <img src="https://skillicons.dev/icons?i=gitlab,github" width="60" align="center" /> Automation with Webhooks
+### 5. <img src="https://skillicons.dev/icons?i=gitlab,github" width="60" align="center" /> Automation with Webhooks
 
 We **highly recommend using GitLab** for a more robust Jenkins integration.
 
@@ -130,21 +133,34 @@ We **highly recommend using GitLab** for a more robust Jenkins integration.
 
 ---
 
-### 7. 🌐 Production DNS & HTTPS Configuration
+### 6. 🌐 Production DNS & HTTPS Configuration
 
 > [!IMPORTANT]  
 > If you set `ENV_TARGET=prod` in `application.properties`, you **MUST** configure a domain name (DNS) to enable HTTPS/SSL.
 
-When deploying to production, ensure your Domain Provider (e.g., Cloudflare, Namecheap, GoDaddy) is configured with the following records pointing to your dynamic EC2 IPs:
+When deploying to production, configure your Domain Provider with these A-records:
 
-- **Backend (API)**: Set `api` and `www.api` A-records pointing to the **Backend Instance IP**.
-- **Frontend (Web)**: Set `@` (root) and `www` A-records pointing to the **Frontend Instance IP**.
+- **Backend (API)**: Set `api` and `www.api` pointing to the **Backend Instance IP**.
+- **Frontend (Web)**: Set `@` (root) and `www` pointing to the **Frontend Instance IP**.
 
 Refer to the example configuration below:
 
 ![DNS Configuration Example](./public/hosting_dns/dns_config.jpg)
 
 ---
+
+### 🚀 Execution & Monitoring
+
+Connect to your Jenkins server and start the automated process:
+
+⚡ **Continuous Deployment (CD)**  
+Simply `git commit` and `git push` your code to the linked repository. The pipeline will trigger automatically.
+
+📡 **Live Monitoring**  
+Access your Jenkins Job dashboard and monitor the **Console Output** for real-time logs of the Terraform, Ansible, and Docker processes.
+
+🔗 **Access Links**  
+Upon successful completion, the system will output the newly provisioned **Frontend** and **Backend URLs** at the very bottom of the log.
 
 ---
 
