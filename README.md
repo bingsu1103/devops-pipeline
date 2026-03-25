@@ -71,10 +71,14 @@ Navigate to `Manage Jenkins` -> `System` -> **Global properties**:
 
 Ensure the SSH key name in AWS matches the project configuration:
 
-1. In AWS Console -> EC2 -> **Key Pairs**.
-2. Create a key pair named **`AWS_key_pair`** (format `.pem`).
-3. Download the file, open with a text editor, and copy the entire content.
-4. Add it to the Jenkins `ec2-ssh-key` credential under the "Private Key" section.
+<img src="https://skillicons.dev/icons?i=aws" width="22" align="center" /> **AWS Console Setup**  
+Navigate to EC2 -> **Key Pairs** and create a key pair specifically named **`AWS_key_pair`** (format `.pem`).
+
+<img src="https://skillicons.dev/icons?i=bash" width="22" align="center" /> **Prepare the Key**  
+Download the `.pem` file, open it with a text editor, and copy the entire private key content.
+
+<img src="https://skillicons.dev/icons?i=jenkins" width="22" align="center" /> **Link to Jenkins**  
+Add the copied content to the Jenkins `ec2-ssh-key` credential under the "Private Key" section.
 
 ---
 
