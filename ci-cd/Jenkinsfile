@@ -20,7 +20,7 @@ pipeline {
         stage('Load Configuration') {
             steps {
                 script {
-                    echo "--- [Configuration as Code] Starting to load configuration ---"
+                    echo "--- Loading Configuration for ${env.ENV_TARGET ?: 'target'} ---"
 
                     // 1. Kiểm tra tồn tại file application.properties ở thư mục gốc
                     if (!fileExists('application.properties')) {
@@ -39,7 +39,6 @@ pipeline {
                     }
 
                     env.ENV_TARGET = rootProps['ENV_TARGET'] ?: 'dev'
-                    echo "--- Môi trường mục tiêu được xác định: ${env.ENV_TARGET} ---"
 
                     // 3. Tìm file cấu hình cụ thể cho môi trường (dev/prod)
                     def envConfigFile = "infrastructure/envs/${env.ENV_TARGET}/pipeline.properties"
@@ -68,7 +67,7 @@ pipeline {
                     env.SSL_ENABLED    = envProps['SSL_ENABLED'] ?: 'false'
                     env.CERTBOT_EMAIL  = envProps['CERTBOT_EMAIL'] ?: 'admin@example.com'
 
-                    echo "--- Cấu hình hoàn tất cho môi trường: ${env.ENV_TARGET} ---"
+                    echo "Configuration loaded successfully."
                 }
             }
         } // Kết thúc stage Load Configuration
@@ -103,9 +102,7 @@ pipeline {
                             env.FRONTEND_IP = frontend_ip
                             env.RDS_HOST = rds_host
 
-                            echo "--- Service Access Information ---"
-                            echo "Backend: http://${env.BACKEND_IP}:${env.B_PORT}"
-                            echo "Frontend: http://${env.FRONTEND_IP}:${env.F_PORT}"
+                            // Inventory and IP information handled. Summary will be shown at the end of pipeline.
 
                             def inventoryTplPath = "${env.WORKSPACE}/ansible/inventory/${env.ENV_TARGET}.ini.example"
                             def inventoryTpl = readFile(inventoryTplPath)
@@ -187,10 +184,26 @@ pipeline {
     } // Kết thúc stages
 
     post {
+        success {
+            script {
+                def protocol = (env.SSL_ENABLED == 'true') ? 'https' : 'http'
+                def f_url = (env.FRONTEND_DOMAIN_NAME != '') ? "${protocol}://${env.FRONTEND_DOMAIN_NAME}" : "http://${env.FRONTEND_IP}:${env.F_PORT}"
+                def b_url = (env.BACKEND_DOMAIN_NAME != '') ? "${protocol}://${env.BACKEND_DOMAIN_NAME}" : "http://${env.BACKEND_IP}:${env.B_PORT}"
+                
+                echo """
+                ==========================================================
+                🚀 DEPLOYMENT SUCCESSFUL!
+                Environment: ${env.ENV_TARGET}
+                ----------------------------------------------------------
+                🔗 Frontend URL: ${f_url}
+                🔗 Backend URL:  ${b_url}
+                ==========================================================
+                """
+            }
+        }
         always {
             script {
-                def envLabel = env.ENV_TARGET ?: 'unknown'
-                echo "--- Pipeline for ${envLabel} environment completed ---"
+                echo "--- Pipeline completed ---"
             }
         }
     }
