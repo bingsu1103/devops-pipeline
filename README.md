@@ -2,7 +2,7 @@
   <img src="./frontend/public/header.svg" width="400" />
 </div>
 
-[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4.x-brightgreen)](https://spring.io/projects/spring-boot)
 [![Terraform](https://img.shields.io/badge/Terraform-Infrastructure-blue)](https://www.terraform.io/)
 [![Ansible](https://img.shields.io/badge/Ansible-Deployment-red)](https://www.ansible.com/)
