@@ -13,7 +13,6 @@
           SPRING_DATASOURCE_USERNAME: "{{ db_username }}"
           SPRING_DATASOURCE_PASSWORD: "{{ db_password }}"
           SPRING_DATASOURCE_DRIVER: "org.postgresql.Driver"
-          SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
           SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
           SERVER_PORT: "{{ b_port | default('7070') }}"
 
