@@ -162,6 +162,34 @@ Refer to the example configuration below:
 
 ---
 
+### 7. <img src="https://skillicons.dev/icons?i=bash" width="30" align="center" /> Manual Server Access (Troubleshooting)
+
+If the pipeline completes but the application is unreachable, you can manually SSH into the Amazon Linux instances to investigate.
+
+**Step 1: Secure the Private Key**  
+Before connecting, ensure your SSH key has the correct read-only permissions:
+
+```bash
+chmod 400 AWS_key_pair.pem
+```
+
+**Step 2: Connect via SSH**  
+Replace `<EC2_PUBLIC_IP>` with the actual IP address provided in the Jenkins logs:
+
+```bash
+ssh -i "AWS_key_pair.pem" ec2-user@<EC2_PUBLIC_IP>
+```
+
+**Step 3: Useful Troubleshooting Commands**  
+Once logged into the instance, use these commands to verify the system's health:
+
+- **Check running containers**: `docker ps`
+- **View application logs**: `docker logs <container_id_or_name>`
+- **Check Docker engine status**: `sudo systemctl status docker`
+- **Verify project directory**: `cd ~/devops-pipeline && ls -la`
+
+---
+
 ### 🚀 Execution & Monitoring
 
 Connect to your Jenkins server and start the automated process:
