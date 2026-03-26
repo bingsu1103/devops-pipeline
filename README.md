@@ -6,6 +6,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.4.x-brightgreen)](https://spring.io/projects/spring-boot)
 [![Terraform](https://img.shields.io/badge/Terraform-Infrastructure-blue)](https://www.terraform.io/)
 [![Ansible](https://img.shields.io/badge/Ansible-Deployment-red)](https://www.ansible.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This is a comprehensive, production-ready DevOps boilerplate designed for a complete CI/CD lifecycle. It automates infrastructure provisioning with **Terraform**, configuration management with **Ansible**, and deployment with **Jenkins** and **Docker**.
 
