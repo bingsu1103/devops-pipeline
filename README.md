@@ -18,8 +18,8 @@ This is a comprehensive, production-ready DevOps boilerplate designed for a comp
   <img src="https://skillicons.dev/icons?i=nextjs,spring,terraform,ansible,jenkins,docker,aws,postgres,bash" />
 </div>
 
-- 🌐 **Frontend**: Next.js 15 (Dynamic Port), Tailwind CSS v4, Framer Motion.
-- ☕ **Backend**: Spring Boot 3.4.x (Dynamic Port), PostgreSQL (Prod) / H2 (Dev).
+- 🌐 **Frontend**: Next.js 16 (Dynamic Port), Tailwind CSS v4, Framer Motion.
+- ☕ **Backend**: Spring Boot 4.4.x (Dynamic Port), PostgreSQL (Prod) / H2 (Dev).
 - ☁️ **IaC**: Terraform (AWS).
 - 🛠️ **Config Management**: Ansible.
 - ⚙️ **CI/CD**: Jenkins, Docker, Bash Scripts.
