@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s # Chu kỳ lấy dữ liệu (mặc định 1 phút)
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Cấu hình Prometheus tự lấy dữ liệu của chính nó
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Cấu hình lấy dữ liệu từ Spring Boot Backend
+  - job_name: "spring-boot-backend"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["host.docker.internal:7070"] # 'host.docker.internal' để truy cập app đang chạy ngoài docker từ trong container
