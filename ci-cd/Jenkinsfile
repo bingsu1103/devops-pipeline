@@ -63,6 +63,15 @@ pipeline {
             }
         }
 
+        stage('Unit Tests') {
+            steps {
+                dir('backend') {
+                    sh 'chmod +x mvnw'
+                    sh './mvnw test'
+                }
+            }
+        }
+
         stage('Build Artifacts') {
             steps {
                 dir('backend') {
